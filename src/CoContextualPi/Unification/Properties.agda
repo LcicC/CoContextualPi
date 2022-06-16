@@ -51,6 +51,9 @@ thick-nothing : (x : Fin (suc n)) → thick x x ≡ nothing
 thick-nothing zero = refl
 thick-nothing {suc n} (suc x) rewrite thick-nothing x = refl
 
+postulate
+  thick-just : (x y : Fin (suc n)) → x ≢  y → ∃[ r ] thick x y ≡ just r 
+  
 thick-reverse : ∀ (x y : Fin (suc n)) {r : Fin n} → thick x y ≡ just r → ∃[ y' ] (y ≡ thin x y')
 thick-reverse zero (suc y) eq = y , refl
 thick-reverse {suc n} (suc x) zero refl = zero , refl
@@ -222,8 +225,74 @@ amgu-sound {one} s t (_ , acc -, z ↦ r) eq
   rewrite sym (<|-assoc (sub acc') (Maybe.maybe var r ∘ thick z) t)
   = amgu-sound (r for z <| s) (r for z <| t) (_ , acc) steq
 
-
 unify-sound : (s t : UTerm u m) → Maybe (Σ[ l ∈ ℕ ] Σ[ σ ∈ Subst m l ] sub σ <| s ≡ sub σ <| t)
 unify-sound s t with unify s t | inspect (unify s) t
 unify-sound s t | nothing | _ = nothing
 unify-sound s t | just (_ , σ) | [ eq ] = just (_ , σ , amgu-sound s t idSubst eq)
+
+data _Subst-∈_  : Subst m n → Subst m l → Set where
+  [_#_] : ∀{f : Subst m n} {g : Subst m l} → (h : Subst n l) → sub g ≗ sub (h ++ f) → f Subst-∈ g
+
+{- 
+var-eq : ∀(g : Subst m l) x y → sub g <| var x ≡ sub g <| var y → (proj₂ (flexFlex x y)) Subst-∈ g
+var-eq g x y eq with x Finₚ.≟ y
+var-eq {m = suc _} g x y eq | yes refl rewrite thick-nothing x = [ g # (λ x₁ → refl) ]
+var-eq {m = suc _} [] x y eq | no x≠y = {!   !} --absurd
+var-eq {m = suc _} (g -, z ↦ r) x y eq | no x≠y with x Finₚ.≟ z
+var-eq {m = suc _} (g -, z ↦ r) x y eq | no x≠y | yes refl = {!   !} 
+var-eq {m = suc _} (g -, z ↦ r) x y eq | no x≠y | no xneqy = {!   !}
+-}
+--var-eq {m = suc _} [] x y refl rewrite thick-nothing x = [ [] # (λ x₁ → refl) ]
+--var-eq (g -, z ↦ r) x y eq with x Finₚ.≟ z 
+--... | yes refl = {! eq  !}
+--... | no x≠z = {!   !}
+
+{-
+Completeness sketch
+(var x)(var y) with x==y → f = idSubst, m=n → h = g, g = g ++ id 
+(var x)(var y) with x≠y →
+(var x) t → check x t = just t', f = singleSubst x t' , g = σ -, z ↦ s since we have g as unifier
+  → 
+-}
+{-
+unify-complete : ∀(s t : UTerm u m) (g : Subst m l)(acc : Σ ℕ (Subst m)) → sub g <| s ≡ sub g <| t 
+  → Σ[ (n , f) ∈ Σ ℕ (Subst m) ](amgu s t acc ≡ just (n , f) × Σ[ h ∈ Subst n l ](sub g ≗ sub (h ++ f)))
+  
+unify-complete {one} (var x) (var y) g (_ , []) eq
+  with  [ h # exteq ] ← var-eq g x y eq
+  =    flexFlex x y , refl , h , exteq
+unify-complete {one} {m = suc m} (var x) t g (_ , []) eq with check x t
+... | nothing = {!!} --absurd?
+unify-complete {one} {m = suc m} (var x) (var .x) [] (_ , []) refl | just t' = idSubst , {!   !} , proj₂ idSubst , λ _ → refl
+unify-complete {one} {m = suc m} (var x) t (σ -, z ↦ s) (_ , []) eq | just t' with x Finₚ.≟ z 
+... | yes refl = singleSubst x t' , {!  !} , σ , {!   !}
+... | no x≠z = singleSubst x t' , {!   !} , {!   !} , {!   !}
+
+-- lem : ∀{x}(s t : UTerm u m)(f g : Fin m → Term n) → f <| s ≡ f <| t → g <| s ≡ g <| t → f 
+
+-- (m , ([] -, x ↦ t')) , {!!} , {!!} , {!!} 
+unify-complete {one} s (var y) g (_ , []) eq = {!   !}
+unify-complete {one} (con x x₁) (con y y₁) g (_ , []) eq = {!   !}
+unify-complete {vec x} s t g acc eq = {!   !} 
+--unify-complete s t g (_ , g -, z ↦ r) eq = {!   !} , ({!   !} , {!   !})
+-}
+
+uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
+  → (g : Fin m → Term l) → g <| s ≡ g <| t
+  → (h : Fin n → Term l) → g ≗ (h <> sub acc)
+  → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] (amgu s t (n , acc) ≡ just (m' , f) × Σ[ g' ∈ (Fin m' → Term l) ] g ≗ (g' <> sub f))
+
+uf-comp {u = one} (var x) (var y) [] g eq h exteq = {!   !}
+uf-comp {u = one} {m = suc m} (var x) t [] g eq h exteq with check x t | inspect (check x) t
+... | just t' | [ eq ] = 
+  m , proj₂ (singleSubst x t') , {!   !} , g ∘ thin x , λ z → {!   !}
+... | nothing | _ = {!   !} -- absurd?
+uf-comp {u = one} s (var y) [] g eq h exteq = {!   !}
+uf-comp {u = one} (con nx xs) (con ny ys) [] g eq h exteq = {!   !}
+uf-comp {u = one} s t (acc -, z ↦ r) g eq h exteq = {!   !}
+uf-comp {u = vec _} s t acc g eq h exteq = {!   !}
+
+
+ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
+  → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](amgu s t (m , []) ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
+ufc s t g eq = uf-comp s t [] g eq g λ _ → refl  
