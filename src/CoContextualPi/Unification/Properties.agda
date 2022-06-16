@@ -1,13 +1,15 @@
 open import Function using (_∘_)
 open import Relation.Binary.PropositionalEquality as ≡ using (_≡_; refl; _≢_; trans; cong; cong₂; sym; subst; inspect; [_])
 open import Relation.Nullary.Negation using (contradiction)
-open import Relation.Nullary using (Dec; yes; no)
+open import Relation.Nullary as ℝ using (Dec; yes; no; _because_; does)
+open import Relation.Nullary.Decidable as Dec using ()
 
 open import Data.Maybe as Maybe using (Maybe; just; nothing)
 open import Data.Product as Product using (∃; Σ; _×_; ∃-syntax; Σ-syntax; _,_; proj₁; proj₂)
 open import Data.Nat.Base as ℕ using (ℕ; zero; suc)
 open import Data.Fin.Base as Fin using (Fin; zero; suc)
 open import Data.Vec.Base as Vec using (Vec; []; _∷_)
+open import Data.Bool
 
 import Data.Nat.Properties as ℕₚ
 import Data.Fin.Properties as Finₚ
@@ -285,12 +287,20 @@ uf-comp : ∀(s t : UTerm u m)(acc : Subst m n)
 uf-comp {u = one} (var x) (var y) [] g eq h exteq = {!   !}
 uf-comp {u = one} {m = suc m} (var x) t [] g eq h exteq with check x t | inspect (check x) t
 ... | just t' | [ eq ] = 
-  m , proj₂ (singleSubst x t') , {!   !} , g ∘ thin x , λ z → {!   !}
+  m , [] -, x ↦ t' , {!   !} , g ∘ thin x , λ z → {!   !}
 ... | nothing | _ = {!   !} -- absurd?
-uf-comp {u = one} s (var y) [] g eq h exteq = {!   !}
-uf-comp {u = one} (con nx xs) (con ny ys) [] g eq h exteq = {!   !}
+uf-comp {u = one} {m = suc m} s (var y) [] g eq h exteq with check y s | inspect (check y) s
+... | just t' | [ eq ] = 
+  m , [] -, y ↦ t' , {!   !} , g ∘ thin y , λ z → {!   !}
+... | nothing | _ = {!   !} -- absurd?
+uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) acc g eq h exteq with kx ℕₚ.≟ ky
+... | no _ = {!   !} -- absurd
+... | yes refl with does (decEqName nx ny)
+...   | false = {!   !} -- absurd
+...   | true = uf-comp xs ys acc g {!   !} h exteq -- extract vector equality
 uf-comp {u = one} s t (acc -, z ↦ r) g eq h exteq = {!   !}
-uf-comp {u = vec _} s t acc g eq h exteq = {!   !}
+uf-comp {u = vec _} [] [] acc g eq h exteq = _ , acc , refl , h , exteq
+uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq h exteq = {!   acc!}
 
 
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
