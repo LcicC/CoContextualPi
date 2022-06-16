@@ -279,12 +279,20 @@ unify-complete {vec x} s t g acc eq = {!   !}
 --unify-complete s t g (_ , g -, z ↦ r) eq = {!   !} , ({!   !} , {!   !})
 -}
 
+-- flexFlex x x returns idSubst
+flexFlex-id : (x : Fin (suc m)) → flexFlex x x ≡ idSubst
+flexFlex-id x =
+  let thick-eq = thick-nothing x in 
+  cong (λ s → Maybe.maybe (λ t → singleSubst x (var t)) idSubst s) thick-eq
+
 uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
   → (g : Fin m → Term l) → g <| s ≡ g <| t
   → (h : Fin n → Term l) → g ≗ (h <> sub acc)
   → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] (amgu s t (n , acc) ≡ just (m' , f) × Σ[ g' ∈ (Fin m' → Term l) ] g ≗ (g' <> sub f))
 
-uf-comp {u = one} (var x) (var y) [] g eq h exteq = {!   !}
+uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq h exteq with x Finₚ.≟ y
+... | no _ = {!   !}
+... | yes refl = _ , [] , cong (λ m → just m) (flexFlex-id x) , g , λ _ → refl
 uf-comp {u = one} {m = suc m} (var x) t [] g eq h exteq with check x t | inspect (check x) t
 ... | just t' | [ eq ] = 
   m , [] -, x ↦ t' , {!   !} , g ∘ thin x , λ z → {!   !}
