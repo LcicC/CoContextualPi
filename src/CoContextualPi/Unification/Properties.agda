@@ -298,32 +298,36 @@ flexFlex-id {m = suc m} x rewrite thick-nothing x =
   --let thick-eq = thick-nothing x in 
   --cong (λ s → Maybe.maybe (λ t → singleSubst x (var t)) idSubst s) thick-eq
 
-uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
-  → (g : Fin m → Term l) → g <| s ≡ g <| t
-  → (h : Fin n → Term l) → g ≗ (h <> sub acc)
-  → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] (amgu s t (n , acc) ≡ just (m' , f) × Σ[ g' ∈ (Fin m' → Term l) ] g ≗ (g' <> sub f))
+--uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
+--  → (g : Fin m → Term l) → g <| s ≡ g <| t
+--  → (h : Fin n → Term l) → g ≗ (h <> sub acc)
+--  → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] (amgu s t (n , acc) ≡ just (m' , f) × Σ[ g' ∈ (Fin m' → Term l) ] g ≗ (g' <> sub f))
 
-uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq h exteq with x Finₚ.≟ y
+uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
+  → (g : Fin n → Term l) → (g <> sub acc) <| s ≡ (g <> sub acc) <| t
+  → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] (amgu s t (n , acc) ≡ just (m' , f) × Σ[ h ∈ (Fin m' → Term l) ] (g <> sub acc) ≗ (h <> sub f))
+
+uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq with x Finₚ.≟ y
 ... | no _ = {!   !}
 ... | yes refl = _ , [] , cong (λ m → just m) (flexFlex-id x) , g , λ _ → refl
-uf-comp {u = one} {m = suc m} (var x) t [] g eq h exteq with check x t | inspect (check x) t
+uf-comp {u = one} {m = suc m} (var x) t [] g eq with check x t | inspect (check x) t
 ... | just t' | [ eq ] = 
   m , [] -, x ↦ t' , {!   !} , g ∘ thin x , λ z → {!   !}
 ... | nothing | _ = {!   !} -- absurd?
-uf-comp {u = one} {m = suc m} s (var y) [] g eq h exteq with check y s | inspect (check y) s
+uf-comp {u = one} {m = suc m} s (var y) [] g eq with check y s | inspect (check y) s
 ... | just t' | [ eq ] = 
   m , [] -, y ↦ t' , {!   !} , g ∘ thin y , λ z → {!   !}
 ... | nothing | _ = {!   !} -- absurd?
-uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) acc g eq h exteq with kx ℕₚ.≟ ky
+uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) acc g eq with kx ℕₚ.≟ ky
 ... | no _ = {!   !} -- absurd
 ... | yes refl with does (decEqName nx ny)
 ...   | false = {!   !} -- absurd
-...   | true = uf-comp xs ys acc g {!   !} h exteq -- extract vector equality
-uf-comp {u = one} s t (acc -, z ↦ r) g eq h exteq = {!   !}
-uf-comp {u = vec _} [] [] acc g eq h exteq = _ , acc , refl , h , exteq
-uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq h exteq = {!   acc!}
+...   | true = uf-comp xs ys acc g {!   !} -- extract vector equality
+uf-comp {u = one} s t (acc -, z ↦ r) g eq = {!   !}
+uf-comp {u = vec _} [] [] acc g eq = {!   !} --_ , acc , refl , h , exteq
+uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq = {!   acc!}
 
 
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
   → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](amgu s t (m , []) ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
-ufc s t g eq = uf-comp s t [] g eq g λ _ → refl   
+ufc s t g eq = uf-comp s t [] g eq   
