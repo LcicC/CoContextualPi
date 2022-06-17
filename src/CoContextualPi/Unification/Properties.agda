@@ -279,11 +279,24 @@ unify-complete {vec x} s t g acc eq = {!   !}
 --unify-complete s t g (_ , g -, z ↦ r) eq = {!   !} , ({!   !} , {!   !})
 -}
 
+{- Maybe eliminator -}
+
+maybe-elim-nothing : ∀{a b}{A : Set a} {B : Maybe A → Set b} →
+        (f : (x : A) → B (just x)) → (fn : B nothing) → Maybe.maybe {A = A}{B} f fn nothing ≡ fn
+maybe-elim-nothing _ _ = refl
+
+maybe-elim-just : ∀{a b}{A : Set a} {B : Maybe A → Set b} →
+        (f : (x : A) → B (just x)) → (fn : B nothing) → (x : A) → Maybe.maybe {A = A}{B} f fn (just x) ≡ f x
+maybe-elim-just _ _ _ = refl
+
+----------------------
+
 -- flexFlex x x returns idSubst
-flexFlex-id : (x : Fin (suc m)) → flexFlex x x ≡ idSubst
-flexFlex-id x =
-  let thick-eq = thick-nothing x in 
-  cong (λ s → Maybe.maybe (λ t → singleSubst x (var t)) idSubst s) thick-eq
+flexFlex-id : (x : Fin m) → flexFlex x x ≡ idSubst
+flexFlex-id {m = suc m} x rewrite thick-nothing x =
+   maybe-elim-nothing {B = λ _ → Σ ℕ (Subst (suc m))} (singleSubst x ∘ var) idSubst
+  --let thick-eq = thick-nothing x in 
+  --cong (λ s → Maybe.maybe (λ t → singleSubst x (var t)) idSubst s) thick-eq
 
 uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
   → (g : Fin m → Term l) → g <| s ≡ g <| t
@@ -313,4 +326,4 @@ uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq h exteq = {!   acc!}
 
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
   → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](amgu s t (m , []) ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
-ufc s t g eq = uf-comp s t [] g eq g λ _ → refl  
+ufc s t g eq = uf-comp s t [] g eq g λ _ → refl   
