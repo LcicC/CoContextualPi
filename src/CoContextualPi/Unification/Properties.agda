@@ -318,15 +318,16 @@ amgu-var-term {m = m}{x = x}{t}{t'} eq rewrite eq = refl
 
 uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
   → (g : Fin n → Term l) → (g <> sub acc) <| s ≡ (g <> sub acc) <| t
-  → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] (amgu s t (n , acc) ≡ just (m' , f) × Σ[ h ∈ (Fin m' → Term l) ] (g <> sub acc) ≗ (h <> sub f))
+  → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] 
+    (amgu s t (n , acc) ≡ just (m' , f) × Σ[ h ∈ (Fin m' → Term l) ] (g <> sub acc) ≗ (h <> sub f))
 
 uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq with thick x y | inspect (thick x) y --x Finₚ.≟ y
 ... | nothing | [ eq ] rewrite nothing-thick x y eq = _ , [] , refl , g , λ _ → refl
 ... | just z | [ eq ] = _ , ([] -, x ↦ var z) , refl , g ∘ thin x , {!   !}
 uf-comp {u = one} {m = suc m} (var x) (con ky ys) [] g eq with check x (con ky ys) | inspect (check x) (con ky ys)
-... | just t' | [ eq ] = 
+... | just t' | [ _ ] = 
   m , [] -, x ↦ t' , refl , g ∘ thin x , λ z → {!   !}
-... | nothing | _ = {!   !} -- absurd
+... | nothing | [ eq ] = {!  !} -- absurd
 uf-comp {u = one} {m = suc m} (con kx xs) (var y) [] g eq with check y (con kx xs) | inspect (check y) (con kx xs)
 ... | just t' | [ eq ] = 
   m , [] -, y ↦ t' , refl , g ∘ thin y , λ z → {!   !}
