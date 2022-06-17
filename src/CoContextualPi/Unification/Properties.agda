@@ -291,17 +291,30 @@ maybe-elim-just _ _ _ = refl
 
 ----------------------
 
--- flexFlex x x returns idSubst
+-- flexFlex x x ≡ idSubst
 flexFlex-id : (x : Fin m) → flexFlex x x ≡ idSubst
 flexFlex-id {m = suc m} x rewrite thick-nothing x =
    maybe-elim-nothing {B = λ _ → Σ ℕ (Subst (suc m))} (singleSubst x ∘ var) idSubst
   --let thick-eq = thick-nothing x in 
   --cong (λ s → Maybe.maybe (λ t → singleSubst x (var t)) idSubst s) thick-eq
 
+-- not used
+flexRigid-just : ∀{x : Fin (suc m)}{t : Term (suc m)}{t' : Term m} 
+  → check x t ≡ just t' → flexRigid x t ≡ just (singleSubst x t')
+flexRigid-just eq rewrite eq = refl
+
 --uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
 --  → (g : Fin m → Term l) → g <| s ≡ g <| t
 --  → (h : Fin n → Term l) → g ≗ (h <> sub acc)
 --  → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] (amgu s t (n , acc) ≡ just (m' , f) × Σ[ g' ∈ (Fin m' → Term l) ] g ≗ (g' <> sub f))
+
+{- amgu equalities -}
+-- not used
+amgu-var-term : ∀{x : Fin (suc m)}{kx : Name k}{xs : Vec (Term (suc m)) k}{t' : Term m} 
+  → check x (con kx xs) ≡ just t' → amgu {u = one} (var x) (con kx xs) idSubst ≡ just (singleSubst x t')
+amgu-var-term {m = m}{x = x}{t}{t'} eq rewrite eq = refl
+
+---------------------
 
 uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
   → (g : Fin n → Term l) → (g <> sub acc) <| s ≡ (g <> sub acc) <| t
@@ -310,24 +323,24 @@ uf-comp : ∀(s t : UTerm u m)(acc : Subst m n)
 uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq with x Finₚ.≟ y
 ... | no _ = {!   !}
 ... | yes refl = _ , [] , cong (λ m → just m) (flexFlex-id x) , g , λ _ → refl
-uf-comp {u = one} {m = suc m} (var x) t [] g eq with check x t | inspect (check x) t
+uf-comp {u = one} {m = suc m} (var x) (con ky ys) [] g eq with check x (con ky ys) | inspect (check x) (con ky ys)
 ... | just t' | [ eq ] = 
-  m , [] -, x ↦ t' , {!   !} , g ∘ thin x , λ z → {!   !}
-... | nothing | _ = {!   !} -- absurd?
-uf-comp {u = one} {m = suc m} s (var y) [] g eq with check y s | inspect (check y) s
+  m , [] -, x ↦ t' , refl , g ∘ thin x , λ z → {!   !}
+... | nothing | _ = {!   !} -- absurd
+uf-comp {u = one} {m = suc m} (con kx xs) (var y) [] g eq with check y (con kx xs) | inspect (check y) (con kx xs)
 ... | just t' | [ eq ] = 
-  m , [] -, y ↦ t' , {!   !} , g ∘ thin y , λ z → {!   !}
-... | nothing | _ = {!   !} -- absurd?
+  m , [] -, y ↦ t' , refl , g ∘ thin y , λ z → {!   !}
+... | nothing | _ = {!   !} -- absurd
 uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) acc g eq with kx ℕₚ.≟ ky
 ... | no _ = {!   !} -- absurd
 ... | yes refl with does (decEqName nx ny)
 ...   | false = {!   !} -- absurd
 ...   | true = uf-comp xs ys acc g {!   !} -- extract vector equality
 uf-comp {u = one} s t (acc -, z ↦ r) g eq = {!   !}
-uf-comp {u = vec _} [] [] acc g eq = {!   !} --_ , acc , refl , h , exteq
+uf-comp {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq = {!   acc!}
 
 
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
   → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](amgu s t (m , []) ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
-ufc s t g eq = uf-comp s t [] g eq   
+ufc s t g eq = uf-comp s t [] g eq    

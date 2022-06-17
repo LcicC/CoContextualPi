@@ -177,15 +177,16 @@ flexFlex {suc m} x y = Maybe.maybe {B = λ _ → Σ ℕ (Subst (suc m))} (single
 
 -- Substitute variable x with term t
 flexRigid : Fin m → Term m → Maybe (∃ (Subst m))
-flexRigid {suc m} x t = singleSubst x <$> check x t
+flexRigid {suc m} x t = Maybe.maybe {B = λ _ → Maybe (Σ ℕ (Subst (suc m)))} (λ t' → just (singleSubst x t')) nothing (check x t)
+--singleSubst x <$> check x t
 
 
 amgu : UTerm u m → UTerm u m → ∃ (Subst m) → Maybe(∃ (Subst m))
 amgu {u = vec _} [] [] acc              = just acc
 amgu {u = vec _} (x ∷ xs) (y ∷ ys) acc  = amgu x y acc >>= amgu xs ys
 amgu {u = one} (var x) (var y) (_ , []) = just (flexFlex x y)
-amgu {u = one} (var x) t (_ , [])       = flexRigid x t
-amgu {u = one} s (var x) (_ , [])       = flexRigid x s
+amgu {u = one} (var x) (con ky ys) (_ , [])       = flexRigid x (con ky ys)
+amgu {u = one} (con kx xs) (var x) (_ , [])       = flexRigid x (con kx xs)
 amgu {u = one} (con {kx} nx asx) (con {ky} ny asy) acc
     with kx ℕₚ.≟ ky
 ... | false because _ = nothing
