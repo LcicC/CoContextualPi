@@ -10,6 +10,7 @@ open import Data.Nat.Base as ℕ using (ℕ; zero; suc)
 open import Data.Fin.Base as Fin using (Fin; zero; suc)
 open import Data.Vec.Base as Vec using (Vec; []; _∷_)
 open import Data.Bool
+open import Data.Empty
 
 import Data.Nat.Properties as ℕₚ
 import Data.Fin.Properties as Finₚ
@@ -52,9 +53,6 @@ f ≗ g = ∀ x → f x ≡ g x
 thick-nothing : (x : Fin (suc n)) → thick x x ≡ nothing
 thick-nothing zero = refl
 thick-nothing {suc n} (suc x) rewrite thick-nothing x = refl
-
-postulate
-  thick-just : (x y : Fin (suc n)) → x ≢  y → ∃[ r ] thick x y ≡ just r 
   
 thick-reverse : ∀ (x y : Fin (suc n)) {r : Fin n} → thick x y ≡ just r → ∃[ y' ] (y ≡ thin x y')
 thick-reverse zero (suc y) eq = y , refl
@@ -236,6 +234,9 @@ data _Subst-∈_  : Subst m n → Subst m l → Set where
   [_#_] : ∀{f : Subst m n} {g : Subst m l} → (h : Subst n l) → sub g ≗ sub (h ++ f) → f Subst-∈ g
 
 {- 
+postulate
+  thick-just : (x y : Fin (suc n)) → x ≢  y → ∃[ r ] thick x y ≡ just r 
+  
 var-eq : ∀(g : Subst m l) x y → sub g <| var x ≡ sub g <| var y → (proj₂ (flexFlex x y)) Subst-∈ g
 var-eq g x y eq with x Finₚ.≟ y
 var-eq {m = suc _} g x y eq | yes refl rewrite thick-nothing x = [ g # (λ x₁ → refl) ]
@@ -292,6 +293,7 @@ maybe-elim-just _ _ _ = refl
 ----------------------
 
 -- flexFlex x x ≡ idSubst
+-- not used
 flexFlex-id : (x : Fin m) → flexFlex x x ≡ idSubst
 flexFlex-id {m = suc m} x rewrite thick-nothing x =
    maybe-elim-nothing {B = λ _ → Σ ℕ (Subst (suc m))} (singleSubst x ∘ var) idSubst
@@ -316,6 +318,30 @@ amgu-var-term {m = m}{x = x}{t}{t'} eq rewrite eq = refl
 
 ---------------------
 
+{- If I have a unifier - absurds -}
+
+<|-var : ∀(x : Fin m)(g : Fin m → Term n) → g <| (var x) ≡ g x
+<|-var _ _ = refl
+
+<|-con : ∀(kx : Name _)(x : Term m)(xs : Vec (Term m) _)
+  → (g : Fin m → Term l) → g <| (con kx (x ∷ xs)) ≡ con kx (g <| x ∷ g <| xs)
+<|-con _ _ _ _ = refl
+
+<|-eq : ∀(x : Fin (suc m))(kx : Name _)(y : Term (suc m))(xs : Vec (Term (suc m)) _)
+  → (g : Fin (suc m) → Term l) → g <| (var x) ≡ g <| (con kx (y ∷ xs))
+  → g x ≡ con kx (g <| y ∷ g <| xs)
+<|-eq x _ _ _ g eq = trans (sym (<|-var x g)) eq
+
+var-con-check : ∀(x : Fin (suc m))(kx : Name k)(xs : Vec (Term (suc m)) k)
+  → (g : Fin (suc m) → Term l) → g <| (var x) ≡ g <| (con kx xs)
+  → Σ[ t' ∈ UTerm _ m ] check x xs ≡ just t'
+var-con-check {k = zero} _ _ [] _ _ = [] , refl
+var-con-check {k = suc k} x kx (y ∷ xs) g eq = 
+  let t' , eq' = var-con-check {!   !} {!   !} xs {!   !} {!   !} in
+  {!  !}
+
+---------------------
+
 uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
   → (g : Fin n → Term l) → (g <> sub acc) <| s ≡ (g <> sub acc) <| t
   → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] 
@@ -331,12 +357,12 @@ uf-comp {u = one} {m = suc m} (var x) (con ky ys) [] g eq with check x (con ky y
 uf-comp {u = one} {m = suc m} (con kx xs) (var y) [] g eq with check y (con kx xs) | inspect (check y) (con kx xs)
 ... | just t' | [ eq ] = 
   m , [] -, y ↦ t' , refl , g ∘ thin y , λ z → {!   !}
-... | nothing | _ = {!   !} -- absurd
-uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) acc g eq with kx ℕₚ.≟ ky
+... | nothing | [ eq ] = {!   !} -- absurd
+uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) [] g eq with kx ℕₚ.≟ ky
 ... | no _ = {!   !} -- absurd
 ... | yes refl with does (decEqName nx ny)
 ...   | false = {!   !} -- absurd
-...   | true = uf-comp xs ys acc g {!   !} -- extract vector equality
+...   | true = uf-comp xs ys [] g {!   !} -- extract vector equality
 uf-comp {u = one} s t (acc -, z ↦ r) g eq = {!   !}
 uf-comp {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq = {!   acc!}

@@ -172,12 +172,14 @@ check {u = vec k} i (x ∷ xs) = _∷_ <$> check i x ⊛ check i xs
 
 -- Substitute variable x with variable y
 flexFlex : Fin m → Fin m → ∃ (Subst m)
-flexFlex {suc m} x y = Maybe.maybe {B = λ _ → Σ ℕ (Subst (suc m))} (singleSubst x ∘ var) idSubst (thick x y)
+flexFlex {suc m} x y = 
+  Maybe.maybe {B = λ _ → Σ ℕ (Subst (suc m))} (singleSubst x ∘ var) idSubst (thick x y)
 
 
 -- Substitute variable x with term t
 flexRigid : Fin m → Term m → Maybe (∃ (Subst m))
-flexRigid {suc m} x t = Maybe.maybe {B = λ _ → Maybe (Σ ℕ (Subst (suc m)))} (λ t' → just (singleSubst x t')) nothing (check x t)
+flexRigid {suc m} x t = 
+  Maybe.maybe {B = λ _ → Maybe (Σ ℕ (Subst (suc m)))} (λ t' → just (singleSubst x t')) nothing (check x t)
 --singleSubst x <$> check x t
 
 
