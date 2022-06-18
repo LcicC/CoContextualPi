@@ -397,8 +397,10 @@ uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) [] g eq with kx ℕₚ.≟ k
 ...   | no ¬eq = ⊥-elim (¬eq (con-name-eq nx ny eq))
 ...   | yes refl = 
           uf-comp xs ys [] g (trans (<>-var-eq g xs) (trans (con-args-eq (g <| xs) (g <| ys) eq) (sym (<>-var-eq g ys))))
-uf-comp {u = one} s t (acc -, z ↦ r) g eq 
-  with eq-assoc ← <|-assoc g (sub (acc -, z ↦ r)) s =
+uf-comp {u = one} s t (acc -, z ↦ r) g eq
+  --rewrite <|-≗ (sub-++ acc ([] -, z ↦ r)) s 
+  rewrite sym (<|-assoc g (sub acc) ((r for z) <| s)) =
+ -- with eq-assoc ← <|-assoc g (sub (acc -, z ↦ r)) s =
   let rec = uf-comp ((r for z) <| s) ((r for z) <| t) acc g {!   !} in {!   !}
 uf-comp {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq 
