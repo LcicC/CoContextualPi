@@ -401,7 +401,7 @@ uf-comp {u = one} s t (acc -, z ↦ r) g eq = {!  !}
 uf-comp {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq 
   with uf-comp x y acc g (cong Vec.head eq) | cong Vec.tail eq
-... | m1 , f1 , eq1 , h1 , exteq1 | eq-xs-ys rewrite eq1 rewrite eq-xs-ys
+... | m1 , f1 , eq1 , h1 , exteq1 | eq-xs-ys rewrite eq1
   with (<|-≗ {f = g <> sub acc}{h1 <> sub f1} exteq1) xs | (<|-≗ {f = g <> sub acc}{h1 <> sub f1} exteq1) ys
 ... | eq-xs | eq-ys 
   with uf-comp xs ys f1 h1 (trans (sym eq-xs) (trans eq-xs-ys eq-ys))
