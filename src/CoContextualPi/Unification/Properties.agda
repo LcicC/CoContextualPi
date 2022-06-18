@@ -323,11 +323,11 @@ amgu-var-term {m = m}{x = x}{t}{t'} eq rewrite eq = refl
 <|-var : ∀(x : Fin m)(g : Fin m → Term n) → g <| (var x) ≡ g x
 <|-var _ _ = refl
 
-<|-con : ∀(kx : Name _)(x : Term m)(xs : Vec (Term m) _)
-  → (g : Fin m → Term l) → g <| (con kx (x ∷ xs)) ≡ con kx (g <| x ∷ g <| xs)
+<|-con : ∀(nx : Name (suc k))(x : Term m)(xs : Vec (Term m) k)
+  → (g : Fin m → Term l) → g <| (con nx (x ∷ xs)) ≡ con nx (g <| x ∷ g <| xs)
 <|-con _ _ _ _ = refl
 
-<|-eq : ∀(x : Fin (suc m))(kx : Name _)(y : Term (suc m))(xs : Vec (Term (suc m)) _)
+<|-eq : ∀(x : Fin (suc m))(kx : Name (suc k))(y : Term (suc m))(xs : Vec (Term (suc m)) k)
   → (g : Fin (suc m) → Term l) → g <| (var x) ≡ g <| (con kx (y ∷ xs))
   → g x ≡ con kx (g <| y ∷ g <| xs)
 <|-eq x _ _ _ g eq = trans (sym (<|-var x g)) eq
@@ -340,6 +340,21 @@ var-con-check {k = suc k} x kx (y ∷ xs) g eq =
   let t' , eq' = var-con-check {!   !} {!   !} xs {!   !} {!   !} in
   {!  !}
 
+<>-var-eq : ∀ (g : Fin m → Term l)(t : UTerm u m) → (g <> var) <| t ≡ g <| t 
+<>-var-eq g t = refl
+
+{- Constructors equalities -}
+
+con-name-eq : ∀(nx ny : Name k){xs ys : Vec (Term m) k} → con nx xs ≡ con ny ys → nx ≡ ny
+con-name-eq nx .nx refl = refl
+
+con-arity-eq : ∀ (kx ky : ℕ) {nx : Name kx}{ny : Name ky}{xs : Vec (Term m) kx}{ys : Vec (Term m) ky} 
+  → con {k = kx} nx xs ≡ con {k = ky} ny ys → kx ≡ ky
+con-arity-eq kx .kx refl = refl
+
+con-args-eq : ∀{nx ny : Name k}(xs ys : Vec (Term m) k) → con nx xs ≡ con ny ys → xs ≡ ys
+con-args-eq xs .xs refl = refl
+
 ---------------------
 
 uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
@@ -350,19 +365,20 @@ uf-comp : ∀(s t : UTerm u m)(acc : Subst m n)
 uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq with thick x y | inspect (thick x) y --x Finₚ.≟ y
 ... | nothing | [ eq ] rewrite nothing-thick x y eq = _ , [] , refl , g , λ _ → refl
 ... | just z | [ eq ] = _ , ([] -, x ↦ var z) , refl , g ∘ thin x , {!   !}
-uf-comp {u = one} {m = suc m} (var x) (con ky ys) [] g eq with check x (con ky ys) | inspect (check x) (con ky ys)
+uf-comp {u = one} {m = suc m} (var x) (con ny ys) [] g eq with check x (con ny ys) | inspect (check x) (con ny ys)
 ... | just t' | [ _ ] = 
   m , [] -, x ↦ t' , refl , g ∘ thin x , λ z → {!   !}
 ... | nothing | [ eq ] = {!  !} -- absurd
-uf-comp {u = one} {m = suc m} (con kx xs) (var y) [] g eq with check y (con kx xs) | inspect (check y) (con kx xs)
+uf-comp {u = one} {m = suc m} (con nx xs) (var y) [] g eq with check y (con nx xs) | inspect (check y) (con nx xs)
 ... | just t' | [ eq ] = 
   m , [] -, y ↦ t' , refl , g ∘ thin y , λ z → {!   !}
 ... | nothing | [ eq ] = {!   !} -- absurd
 uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) [] g eq with kx ℕₚ.≟ ky
-... | no _ = {!   !} -- absurd
-... | yes refl with does (decEqName nx ny)
-...   | false = {!   !} -- absurd
-...   | true = uf-comp xs ys [] g {!   !} -- extract vector equality
+... | no ¬eq = ⊥-elim (¬eq (con-arity-eq kx ky eq))
+... | yes refl with (decEqName nx ny)
+...   | no ¬eq = ⊥-elim (¬eq (con-name-eq nx ny eq))
+...   | yes refl = 
+          uf-comp xs ys [] g (trans (<>-var-eq g xs) (trans (con-args-eq (g <| xs) (g <| ys) eq) (sym (<>-var-eq g ys))))
 uf-comp {u = one} s t (acc -, z ↦ r) g eq = {!   !}
 uf-comp {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq = {!   acc!}
@@ -370,4 +386,4 @@ uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq = {!   acc!}
 
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
   → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](amgu s t (m , []) ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
-ufc s t g eq = uf-comp s t [] g eq    
+ufc s t g eq = uf-comp s t [] g eq      
