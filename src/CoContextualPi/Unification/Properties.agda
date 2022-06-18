@@ -332,13 +332,22 @@ amgu-var-term {m = m}{x = x}{t}{t'} eq rewrite eq = refl
   → g x ≡ con kx (g <| y ∷ g <| xs)
 <|-eq x _ _ _ g eq = trans (sym (<|-var x g)) eq
 
-var-con-check : ∀(x : Fin (suc m))(kx : Name k)(xs : Vec (Term (suc m)) k)
-  → (g : Fin (suc m) → Term l) → g <| (var x) ≡ g <| (con kx xs)
+check-vec : ∀(x : Fin (suc m))(y : Term (suc m))(xs : Vec (Term (suc m)) k)(t : UTerm _ m) 
+  → check x (y ∷ xs) ≡ just t → Σ[ t' ∈ UTerm _ m ] check x xs ≡ just t'
+check-vec x y xs t eq = {!   !}
+
+check-just : ∀(x : Fin (suc m))(t : UTerm _ (suc m))(g : Fin (suc m) → Term l) 
+  → g x ≡ g <| t → Σ[ t' ∈ UTerm _ m ] check x t ≡ just t'
+check-just x (var y) g eq with thick x y | inspect (thick x) y
+... | nothing | [ th-eq ] rewrite nothing-thick x y th-eq = {!   !} , {!   !}
+... | just z | [ th-eq ] = {!   !}
+check-just x (con ny ys) g eq = {!   !}
+
+var-con-check : ∀(x : Fin (suc m))(nx : Name k)(xs : Vec (Term (suc m)) k)
+  → (g : Fin (suc m) → Term l) → g x ≡ con {k = k} nx (g <| xs)
   → Σ[ t' ∈ UTerm _ m ] check x xs ≡ just t'
 var-con-check {k = zero} _ _ [] _ _ = [] , refl
-var-con-check {k = suc k} x kx (y ∷ xs) g eq = 
-  let t' , eq' = var-con-check {!   !} {!   !} xs {!   !} {!   !} in
-  {!  !}
+var-con-check {k = suc k} x kx (y ∷ xs) g eq = {!   !}
 
 <>-var-eq : ∀ (g : Fin m → Term l)(t : UTerm u m) → (g <> var) <| t ≡ g <| t 
 <>-var-eq g t = refl
@@ -362,26 +371,32 @@ uf-comp : ∀(s t : UTerm u m)(acc : Subst m n)
   → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] 
     (amgu s t (n , acc) ≡ just (m' , f) × Σ[ h ∈ (Fin m' → Term l) ] (g <> sub acc) ≗ (h <> sub f))
 
-uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq with thick x y | inspect (thick x) y --x Finₚ.≟ y
-... | nothing | [ eq ] rewrite nothing-thick x y eq = _ , [] , refl , g , λ _ → refl
-... | just z | [ eq ] = _ , ([] -, x ↦ var z) , refl , g ∘ thin x , {!   !}
+uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq with thick x y | inspect (thick x) y
+... | nothing | [ th-eq ] rewrite nothing-thick x y th-eq = _ , [] , refl , g , λ _ → refl
+... | just z | [ _ ] = _ , ([] -, x ↦ var z) , refl , g ∘ thin x , {!   !}
 uf-comp {u = one} {m = suc m} (var x) (con ny ys) [] g eq with check x (con ny ys) | inspect (check x) (con ny ys)
-... | just t' | [ _ ] = 
-  m , [] -, x ↦ t' , refl , g ∘ thin x , λ z → {!   !}
-... | nothing | [ eq ] = {!  !} -- absurd
+... | just t' | [ ch-eq ] rewrite ch-eq = 
+  m , [] -, x ↦ t' , refl , g ∘ thin x , λ z → check-eq x t' g z
+    where
+      check-eq : ∀ x t g z → g z ≡ (λ y → g (thin x y)) <| (var <> (t for x)) z 
+      check-eq x t g z with thick x z | inspect (thick x) z
+      ... | nothing | [ e ] rewrite nothing-thick x z e = {!   !}
+      ... | just z' | [ e ] = {!   !}
+
+... | nothing | [ ch-eq ] = {!  !} -- absurd
 uf-comp {u = one} {m = suc m} (con nx xs) (var y) [] g eq with check y (con nx xs) | inspect (check y) (con nx xs)
 ... | just t' | [ eq ] = 
   m , [] -, y ↦ t' , refl , g ∘ thin y , λ z → {!   !}
 ... | nothing | [ eq ] = {!   !} -- absurd
 uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) [] g eq with kx ℕₚ.≟ ky
 ... | no ¬eq = ⊥-elim (¬eq (con-arity-eq kx ky eq))
-... | yes refl with (decEqName nx ny)
+... | yes refl with decEqName nx ny
 ...   | no ¬eq = ⊥-elim (¬eq (con-name-eq nx ny eq))
 ...   | yes refl = 
           uf-comp xs ys [] g (trans (<>-var-eq g xs) (trans (con-args-eq (g <| xs) (g <| ys) eq) (sym (<>-var-eq g ys))))
-uf-comp {u = one} s t (acc -, z ↦ r) g eq = {!   !}
+uf-comp {u = one} s t (acc -, z ↦ r) g eq = {!  !}
 uf-comp {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
-uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq = {!   acc!}
+uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq = {!   !}
 
 
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
