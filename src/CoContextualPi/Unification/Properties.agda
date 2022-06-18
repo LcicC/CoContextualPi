@@ -230,8 +230,8 @@ unify-sound s t with unify s t | inspect (unify s) t
 unify-sound s t | nothing | _ = nothing
 unify-sound s t | just (_ , σ) | [ eq ] = just (_ , σ , amgu-sound s t idSubst eq)
 
-data _Subst-∈_  : Subst m n → Subst m l → Set where
-  [_#_] : ∀{f : Subst m n} {g : Subst m l} → (h : Subst n l) → sub g ≗ sub (h ++ f) → f Subst-∈ g
+-- data _Subst-∈_  : Subst m n → Subst m l → Set where
+--   [_#_] : ∀{f : Subst m n} {g : Subst m l} → (h : Subst n l) → sub g ≗ sub (h ++ f) → f Subst-∈ g
 
 {- 
 postulate
@@ -332,9 +332,12 @@ amgu-var-term {m = m}{x = x}{t}{t'} eq rewrite eq = refl
   → g x ≡ con kx (g <| y ∷ g <| xs)
 <|-eq x _ _ _ g eq = trans (sym (<|-var x g)) eq
 
-check-vec : ∀(x : Fin (suc m))(y : Term (suc m))(xs : Vec (Term (suc m)) k)(t : UTerm _ m) 
-  → check x (y ∷ xs) ≡ just t → Σ[ t' ∈ UTerm _ m ] check x xs ≡ just t'
-check-vec x y xs t eq = {!   !}
+<|-vec : ∀(x : Term m)(xs : Vec (Term m) k)(g : Fin m → Term l) → g <| (x ∷ xs) ≡ g <| x ∷ g <| xs
+<|-vec _ _ _ = refl
+
+<|-vec-eq : ∀(x y : Term m)(xs ys : Vec (Term m) k)(g : Fin m → Term l) 
+  → g <| (x ∷ xs) ≡ g <| (y ∷ ys) → g <| x ≡ g <| y × g <| xs ≡ g <| ys
+<|-vec-eq x y xs ys g eq rewrite <|-vec x xs g = cong (λ v → Vec.head v) eq , cong (λ v → Vec.tail v) eq
 
 check-just : ∀(x : Fin (suc m))(t : UTerm _ (suc m))(g : Fin (suc m) → Term l) 
   → g x ≡ g <| t → Σ[ t' ∈ UTerm _ m ] check x t ≡ just t'
@@ -381,7 +384,7 @@ uf-comp {u = one} {m = suc m} (var x) (con ny ys) [] g eq with check x (con ny y
       check-eq : ∀ x t g z → g z ≡ (λ y → g (thin x y)) <| (var <> (t for x)) z 
       check-eq x t g z with thick x z | inspect (thick x) z
       ... | nothing | [ e ] rewrite nothing-thick x z e = {!   !}
-      ... | just z' | [ e ] = {!   !}
+      ... | just z' | [ e ] = cong g {!  !}
 
 ... | nothing | [ ch-eq ] = {!  !} -- absurd
 uf-comp {u = one} {m = suc m} (con nx xs) (var y) [] g eq with check y (con nx xs) | inspect (check y) (con nx xs)
@@ -396,7 +399,13 @@ uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) [] g eq with kx ℕₚ.≟ k
           uf-comp xs ys [] g (trans (<>-var-eq g xs) (trans (con-args-eq (g <| xs) (g <| ys) eq) (sym (<>-var-eq g ys))))
 uf-comp {u = one} s t (acc -, z ↦ r) g eq = {!  !}
 uf-comp {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
-uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq = {!   !}
+uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq 
+  with uf-comp x y acc g (cong Vec.head eq) | cong Vec.tail eq
+... | m1 , f1 , eq1 , h1 , exteq1 | eq-xs-ys rewrite eq1 rewrite eq-xs-ys
+  with (<|-≗ {f = g <> sub acc}{h1 <> sub f1} exteq1) xs | (<|-≗ {f = g <> sub acc}{h1 <> sub f1} exteq1) ys
+... | eq-xs | eq-ys 
+  with uf-comp xs ys f1 h1 (trans (sym eq-xs) (trans eq-xs-ys eq-ys))
+... | m2 , f2 , eq2 , h2 , exteq2 = m2 , f2 , eq2 , h2 , λ z → trans (exteq1 z) (exteq2 z)
 
 
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
