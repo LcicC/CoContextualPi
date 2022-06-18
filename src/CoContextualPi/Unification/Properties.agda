@@ -397,18 +397,24 @@ uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) [] g eq with kx ℕₚ.≟ k
 ...   | no ¬eq = ⊥-elim (¬eq (con-name-eq nx ny eq))
 ...   | yes refl = 
           uf-comp xs ys [] g (trans (<>-var-eq g xs) (trans (con-args-eq (g <| xs) (g <| ys) eq) (sym (<>-var-eq g ys))))
-uf-comp {u = one} s t (acc -, z ↦ r) g eq = {!  !}
+uf-comp {u = one} s t (acc -, z ↦ r) g eq 
+  with eq-assoc ← <|-assoc g (sub (acc -, z ↦ r)) s =
+  let rec = uf-comp ((r for z) <| s) ((r for z) <| t) acc g {!   !} in {!   !}
 uf-comp {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq 
   -- amgu first computed con the heads
-  with uf-comp x y acc g (cong Vec.head eq) | cong Vec.tail eq
-... | m1 , f1 , eq1 , h1 , exteq1 | eq-xs-ys rewrite eq1
+  with 
+    m1 , f1 , eq1 , h1 , exteq1 ← uf-comp x y acc g (cong Vec.head eq) | 
+    eq-xs-ys ← cong Vec.tail eq
+  rewrite eq1
   -- obtain <| equalities from extensional equality
-  with (<|-≗ {f = g <> sub acc}{h1 <> sub f1} exteq1) xs | (<|-≗ {f = g <> sub acc}{h1 <> sub f1} exteq1) ys
-... | eq-xs | eq-ys 
+  with 
+    eq-xs ← (<|-≗ {f = g <> sub acc}{h1 <> sub f1} exteq1) xs | 
+    eq-ys ← (<|-≗ {f = g <> sub acc}{h1 <> sub f1} exteq1) ys
   -- amgu computed with updated accumulator
-  with uf-comp xs ys f1 h1 (trans (sym eq-xs) (trans eq-xs-ys eq-ys))
-... | m2 , f2 , eq2 , h2 , exteq2 = m2 , f2 , eq2 , h2 , λ z → trans (exteq1 z) (exteq2 z)
+  with
+    m2 , f2 , eq2 , h2 , exteq2 ← uf-comp xs ys f1 h1 (trans (sym eq-xs) (trans eq-xs-ys eq-ys)) = 
+    m2 , f2 , eq2 , h2 , λ z → trans (exteq1 z) (exteq2 z)
 
 
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
