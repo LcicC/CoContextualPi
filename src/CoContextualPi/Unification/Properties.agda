@@ -11,6 +11,7 @@ open import Data.Fin.Base as Fin using (Fin; zero; suc)
 open import Data.Vec.Base as Vec using (Vec; []; _∷_)
 open import Data.Bool
 open import Data.Empty
+open import Data.Sum
 
 import Data.Nat.Properties as ℕₚ
 import Data.Fin.Properties as Finₚ
@@ -72,6 +73,25 @@ thick-thin : (x : Fin (suc n)) (y : Fin n) → thick x (thin x y) ≡ just y
 thick-thin zero y = refl
 thick-thin (suc x) zero = refl
 thick-thin (suc x) (suc y) = cong (Maybe.map suc) (thick-thin x y)
+
+thick-abs : ∀(x y : Fin (suc m)) → thick (suc x) (suc y) ≡ just zero → ⊥
+thick-abs {m = zero} zero zero ()
+thick-abs {m = zero} zero (suc ()) _
+thick-abs {m = suc m} zero zero ()
+thick-abs {m = suc m} zero (suc y) ()
+thick-abs {m = suc m} (suc x) (suc y) eq = {!   !}
+
+thick-suc : ∀(x y : Fin (suc m))(z : Fin m) → thick (suc x) (suc y) ≡ just (suc z) → thick x y ≡ just z
+thick-suc {m = .(suc _)} zero y zero eq = {!   !}
+thick-suc {m = .(suc _)} (suc x) zero zero eq = {!   !}
+thick-suc {m = .(suc _)} (suc x) (suc y) zero eq = {!   !}
+thick-suc {m = .(suc _)} x y (suc z) eq = {!   !} 
+
+thin-thick : ∀(x : Fin (suc m))(y : Fin m)(z : Fin (suc m)) → thick x z ≡ just y → z ≡ thin x y
+thin-thick zero y (suc .y) refl = refl
+thin-thick (suc x) zero zero refl = refl
+thin-thick {suc m} (suc x) zero (suc z) eq = {!   !}
+thin-thick {suc m} (suc x) (suc y) (suc z) eq = {!   !}
 
 check-thin : (i : Fin (suc n)) (t : UTerm u (suc n)) {t' : UTerm u n}
            → check i t ≡ just t' → t ≡ |> (thin i) <| t'
@@ -378,13 +398,14 @@ uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq with thick x y | inspect (
 ... | nothing | [ th-eq ] rewrite nothing-thick x y th-eq = _ , [] , refl , g , λ _ → refl
 ... | just z | [ _ ] = _ , ([] -, x ↦ var z) , refl , g ∘ thin x , {!   !}
 uf-comp {u = one} {m = suc m} (var x) (con ny ys) [] g eq with check x (con ny ys) | inspect (check x) (con ny ys)
-... | just t' | [ ch-eq ] rewrite ch-eq = 
+... | just t' | [ ch-eq ] = 
   m , [] -, x ↦ t' , refl , g ∘ thin x , λ z → check-eq x t' g z
     where
       check-eq : ∀ x t g z → g z ≡ (λ y → g (thin x y)) <| (var <> (t for x)) z 
       check-eq x t g z with thick x z | inspect (thick x) z
-      ... | nothing | [ e ] rewrite nothing-thick x z e = {!   !}
-      ... | just z' | [ e ] = cong g {!  !}
+      check-eq x (var y) g z | nothing | [ e ] rewrite (nothing-thick x z e) = {! !}
+      check-eq x (con _ _) g z | nothing | [ e ] rewrite sym (nothing-thick x z e) = {! t  !}
+      check-eq x t g z | just z' | [ e ] = cong g {!   !} --(thin-thick x z' z e)
 
 ... | nothing | [ ch-eq ] = {!  !} -- absurd
 uf-comp {u = one} {m = suc m} (con nx xs) (var y) [] g eq with check y (con nx xs) | inspect (check y) (con nx xs)
