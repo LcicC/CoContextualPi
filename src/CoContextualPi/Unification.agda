@@ -116,9 +116,10 @@ f <> g = f <|_ ∘ g
 
 -- A renaming (thin x) pushes up everithing x and above
 thin : Fin (suc n) → Fin n → Fin (suc n)
-thin zero y = suc y
-thin (suc x) zero = zero
-thin (suc x) (suc y) = suc (thin x y)
+thin x y = Fin.punchIn x y
+--thin zero y = suc y
+--thin (suc x) zero = zero
+--thin (suc x) (suc y) = suc (thin x y)
 
 -- A renaming (thick x) tries to lower everything above x
 -- Only succeeds if x itself is not present
@@ -127,6 +128,9 @@ thick zero zero = nothing
 thick zero (suc y) = just y
 thick {suc n} (suc x) zero = just zero
 thick {suc n} (suc x) (suc y) = suc <$> (thick x y)
+--thick x y with x Finₚ.≟ y
+--... | yes refl = nothing
+--... | no ¬eq = just (Fin.punchOut ¬eq)
 
 -- Substitution of one particular variable
 --
