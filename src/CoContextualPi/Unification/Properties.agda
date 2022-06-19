@@ -74,23 +74,28 @@ thick-thin zero y = refl
 thick-thin (suc x) zero = refl
 thick-thin (suc x) (suc y) = cong (Maybe.map suc) (thick-thin x y)
 
-thick-abs : ∀(x y : Fin (suc m)) → thick (suc x) (suc y) ≡ just zero → ⊥
-thick-abs {m = zero} zero zero ()
-thick-abs {m = zero} zero (suc ()) _
-thick-abs {m = suc m} zero zero ()
-thick-abs {m = suc m} zero (suc y) ()
-thick-abs {m = suc m} (suc x) (suc y) eq = {!   !}
+mutual
+  thick-abs : ∀(x y : Fin (suc m)) → thick (suc x) (suc y) ≡ just zero → ⊥
+  thick-abs {m = zero} zero zero ()
+  thick-abs {m = zero} zero (suc ()) _
+  thick-abs {m = suc m} zero zero ()
+  thick-abs {m = suc m} zero (suc y) ()
+  thick-abs {m = suc m} (suc x) (suc y) eq = thick-abs x y {!   !}
 
-thick-suc : ∀(x y : Fin (suc m))(z : Fin m) → thick (suc x) (suc y) ≡ just (suc z) → thick x y ≡ just z
-thick-suc {m = .(suc _)} zero y zero eq = {!   !}
-thick-suc {m = .(suc _)} (suc x) zero zero eq = {!   !}
-thick-suc {m = .(suc _)} (suc x) (suc y) zero eq = {!   !}
-thick-suc {m = .(suc _)} x y (suc z) eq = {!   !} 
+  thick-res : ∀ (x y : Fin (suc m))(z : Fin _) → thick x y ≡ just z 
+    → Fin.toℕ z ≡ Fin.toℕ y ⊎ Fin.toℕ z ≡ ℕ.pred (Fin.toℕ y)
+  thick-res zero (suc y) .y refl = inj₂ refl
+  thick-res (suc x) zero zero refl = inj₁ refl
+  thick-res (suc x) (suc y) zero eq = ⊥-elim (thick-abs x y eq)
+  thick-res (suc x) (suc y) (suc z) eq = {!   !}
+
+  thick-suc : ∀(x y : Fin (suc m))(z : Fin m) → thick (suc x) (suc y) ≡ just (suc z) → thick x y ≡ just z
+  thick-suc {m = m} x y z eq = {!   !}
 
 thin-thick : ∀(x : Fin (suc m))(y : Fin m)(z : Fin (suc m)) → thick x z ≡ just y → z ≡ thin x y
 thin-thick zero y (suc .y) refl = refl
 thin-thick (suc x) zero zero refl = refl
-thin-thick {suc m} (suc x) zero (suc z) eq = {!   !}
+thin-thick {suc m} (suc x) zero (suc z) eq = ⊥-elim (thick-abs x z eq)
 thin-thick {suc m} (suc x) (suc y) (suc z) eq = {!   !}
 
 check-thin : (i : Fin (suc n)) (t : UTerm u (suc n)) {t' : UTerm u n}
@@ -399,4 +404,4 @@ uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq
 
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
   → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](amgu s t (m , []) ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
-ufc s t g eq = uf-comp s t [] g eq      
+ufc s t g eq = uf-comp s t [] g eq       
