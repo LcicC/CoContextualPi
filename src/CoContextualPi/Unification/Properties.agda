@@ -391,12 +391,17 @@ uf-comp {u = one} {m = suc m} (con nx xs) (var y) [] g eq with check y (con nx x
 ... | just t' | [ eq ] = 
   m , [] -, y ↦ t' , refl , g ∘ thin y , λ z → {!   !}
 ... | nothing | [ eq ] = {!   !} -- absurd
-uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) [] g eq with kx ℕₚ.≟ ky
+uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) acc g eq with kx ℕₚ.≟ ky
 ... | no ¬eq = ⊥-elim (¬eq (con-arity-eq kx ky eq))
 ... | yes refl with decEqName nx ny
 ...   | no ¬eq = ⊥-elim (¬eq (con-name-eq nx ny eq))
 ...   | yes refl = 
-          uf-comp xs ys [] g (trans (<>-var-eq g xs) (trans (con-args-eq (g <| xs) (g <| ys) eq) (sym (<>-var-eq g ys))))
+          uf-comp xs ys acc g 
+            (trans 
+              (<>-var-eq (g <> sub acc) xs) 
+              (trans 
+                (con-args-eq ((g <> sub acc) <| xs) ((g <> sub acc) <| ys) eq) 
+                (sym (<>-var-eq (g <> sub acc) ys))))
 uf-comp {u = one} s t (acc -, z ↦ r) g eq
   --rewrite <|-≗ (sub-++ acc ([] -, z ↦ r)) s 
   rewrite sym (<|-assoc g (sub acc) ((r for z) <| s)) =
