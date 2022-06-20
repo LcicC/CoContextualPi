@@ -427,6 +427,5 @@ uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq
 
 
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
-  → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](amgu s t (m , []) ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
+  → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](unify s t ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
 ufc s t g eq = uf-comp s t [] g eq       
--- usare unify  
