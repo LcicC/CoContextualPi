@@ -85,12 +85,19 @@ thick-thin (suc x) zero = refl
 thick-thin (suc x) (suc y) = cong (Maybe.map suc) (thick-thin x y)
 
 thick-res : ∀(x y : Fin (suc m)) → thick (suc x) (suc y) ≡ nothing ⊎ Σ[ z ∈ Fin m ] thick (suc x) (suc y) ≡ just (suc z)
+thick-res {m = zero} zero zero = inj₁ refl
+thick-res {m = suc m} zero zero = inj₁ refl
+thick-res {m = suc m} zero (suc y) = inj₂ (y , refl)
+thick-res {m = suc m} (suc x) zero = inj₂ (zero , refl)
+thick-res {m = suc m} (suc x) (suc y) with thick-res x y 
+... | inj₁ e rewrite e = inj₁ refl
+... | inj₂ (z , e) rewrite e = inj₂ (suc z , refl)
 
 thick-suc : ∀(x y : Fin (suc m))(z : Fin m) → thick (suc x) (suc y) ≡ just (suc z) → thick x y ≡ just z
 thick-suc {m = m} x y z eq with thick x y | inspect (thick x) y
 thick-suc {m = m} x y z () | nothing | [ _ ]
 ... | just z' | [ e ] = 
-  let eq1 = Finₚ.suc-injective (Maybeₚ.just-injective eq) in cong just eq1 --iniettività just suc
+  let eq1 = Finₚ.suc-injective (Maybeₚ.just-injective eq) in cong just eq1
  
 thin-thick : ∀(x y : Fin (suc m))(z : Fin m) → thick x y ≡ just z → y ≡ thin x z
 thin-thick zero (suc .z) z refl = refl
@@ -367,7 +374,6 @@ uf-comp {u = one} {m = suc m} (var x) (con ny ys) [] g eq with check x (con ny y
         let ch-th-eq = check-thin x (con ny ys) ch-eq in
         trans eq (trans (cong (_<|_ g) ch-th-eq) (<|-assoc g (|> (thin x)) t'))
       check-eq z | just z' | [ e ] = cong g (thin-thick x z z' e)
-
 ... | nothing | [ ch-eq ] = {!  !} -- absurd
 uf-comp {u = one} {m = suc m} (con nx xs) (var y) [] g eq with check y (con nx xs) | inspect (check y) (con nx xs)
 ... | just t' | [ eq ] = 
@@ -409,4 +415,4 @@ uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
   → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](amgu s t (m , []) ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
 ufc s t g eq = uf-comp s t [] g eq       
--- usare unify 
+-- usare unify  
