@@ -362,7 +362,13 @@ uf-comp : ∀(s t : UTerm u m)(acc : Subst m n)
 
 uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq with thick x y | inspect (thick x) y
 ... | nothing | [ th-eq ] rewrite nothing-thick x y th-eq = _ , [] , refl , g , λ _ → refl
-... | just z | [ _ ] = _ , ([] -, x ↦ var z) , refl , g ∘ thin x , {!   !}
+... | just z | [ th-eq ] = _ , ([] -, x ↦ var z) , refl , g ∘ thin x , λ xx → check-eq xx
+    where
+      check-eq : ∀ xx → g xx ≡ (g ∘ (thin x)) <| (var <> ((var z) for x)) xx
+      check-eq xx with thick x xx | inspect (thick x) xx
+      check-eq xx | nothing | [ e ]
+        rewrite <|-id (var z) rewrite sym (nothing-thick x xx e) = trans eq (cong g (thin-thick x y z th-eq))
+      check-eq xx | just z' | [ e ] = cong g (thin-thick x xx z' e)
 uf-comp {u = one} {m = suc m} (var x) (con ny ys) [] g eq with check x (con ny ys) | inspect (check x) (con ny ys)
 ... | just t' | [ ch-eq ] = 
   m , [] -, x ↦ t' , refl , g ∘ (thin x) , λ z → check-eq z
