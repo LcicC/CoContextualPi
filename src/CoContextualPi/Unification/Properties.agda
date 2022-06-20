@@ -365,9 +365,9 @@ uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq with thick x y | inspect (
 ... | just z | [ _ ] = _ , ([] -, x ↦ var z) , refl , g ∘ thin x , {!   !}
 uf-comp {u = one} {m = suc m} (var x) (con ny ys) [] g eq with check x (con ny ys) | inspect (check x) (con ny ys)
 ... | just t' | [ ch-eq ] = 
-  m , [] -, x ↦ t' , refl , g <> (|> (thin x)) , λ z → check-eq z
+  m , [] -, x ↦ t' , refl , g ∘ (thin x) , λ z → check-eq z
     where
-      check-eq : ∀ z → g z ≡ (g <> (|> (thin x))) <| (var <> (t' for x)) z 
+      check-eq : ∀ z → g z ≡ (g ∘ (thin x)) <| (var <> (t' for x)) z 
       check-eq z with thick x z | inspect (thick x) z
       check-eq z | nothing | [ e ] 
         rewrite <|-id t' rewrite sym (nothing-thick x z e) = 
@@ -376,8 +376,16 @@ uf-comp {u = one} {m = suc m} (var x) (con ny ys) [] g eq with check x (con ny y
       check-eq z | just z' | [ e ] = cong g (thin-thick x z z' e)
 ... | nothing | [ ch-eq ] = {!  !} -- absurd
 uf-comp {u = one} {m = suc m} (con nx xs) (var y) [] g eq with check y (con nx xs) | inspect (check y) (con nx xs)
-... | just t' | [ eq ] = 
-  m , [] -, y ↦ t' , refl , g ∘ thin y , λ z → {!   !}
+... | just t' | [ ch-eq ] = 
+  m , [] -, y ↦ t' , refl , g ∘ thin y , λ z → check-eq z
+    where
+      check-eq : ∀ z → g z ≡ (g ∘ (thin y)) <| (var <> (t' for y)) z 
+      check-eq z with thick y z | inspect (thick y) z
+      check-eq z | nothing | [ e ] 
+        rewrite <|-id t' rewrite sym (nothing-thick y z e) = 
+        let ch-th-eq = check-thin y (con nx xs) ch-eq in
+        trans (sym eq) (trans (cong (_<|_ g) ch-th-eq) (<|-assoc g (|> (thin y)) t'))
+      check-eq z | just z' | [ e ] = cong g (thin-thick y z z' e)
 ... | nothing | [ eq ] = {!   !} -- absurd
 uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) acc g eq with kx ℕₚ.≟ ky
 ... | no ¬eq = ⊥-elim (¬eq (con-arity-eq kx ky eq))
