@@ -28,6 +28,16 @@ private
     n m l k : ℕ
     u : Univ
 
+{- Maybe & Fin absurds -}
+
+maybe-abs : ∀{l}{A : Set l}{t : A} → nothing ≡ just t → ⊥
+maybe-abs ()
+
+fin-abs : ∀{i : Fin m} → zero ≡ (Fin.suc i) → ⊥
+fin-abs ()
+
+----------------------
+
 -- This must be in the stdlib somewhere?
 infix 15 _≗_
 _≗_ : {A : Set} {B : Set} → (A → B) → (A → B) → Set
@@ -74,20 +84,21 @@ thick-thin zero y = refl
 thick-thin (suc x) zero = refl
 thick-thin (suc x) (suc y) = cong (Maybe.map suc) (thick-thin x y)
 
-mutual
-  -- thick suc suc = suc or nothing
+thick-res : ∀(x y : Fin (suc m)) → thick (suc x) (suc y) ≡ nothing ⊎ Σ[ z ∈ Fin m ] thick (suc x) (suc y) ≡ just (suc z)
 
-  thick-suc : ∀(x y : Fin (suc m))(z : Fin m) → thick (suc x) (suc y) ≡ just (suc z) → thick x y ≡ just z
-  thick-suc {m = m} x y z eq with thick x y | inspect (thick x) y
-  ... | nothing | [ e ] = {!   !}
-  ... | just z' | [ e ] = {!   !} --iniettività just suc
-
-thin-thick : ∀(x : Fin (suc m))(y : Fin m)(z : Fin (suc m)) → thick x z ≡ just y → z ≡ thin x y
-thin-thick zero y (suc .y) refl = refl
-thin-thick (suc x) zero zero refl = refl
-thin-thick {suc m} (suc x) zero (suc z) eq = {!   !} --⊥-elim (thick-abs x z eq)
-thin-thick {suc m} (suc x) (suc y) (suc z) eq = 
-  let eq1 = thin-thick {!   !} {!   !} {!   !} {!   !} in {!  !}
+thick-suc : ∀(x y : Fin (suc m))(z : Fin m) → thick (suc x) (suc y) ≡ just (suc z) → thick x y ≡ just z
+thick-suc {m = m} x y z eq with thick x y | inspect (thick x) y
+thick-suc {m = m} x y z () | nothing | [ _ ]
+... | just z' | [ e ] = 
+  let eq1 = Finₚ.suc-injective (Maybeₚ.just-injective eq) in cong just eq1 --iniettività just suc
+ 
+thin-thick : ∀(x y : Fin (suc m))(z : Fin m) → thick x y ≡ just z → y ≡ thin x z
+thin-thick zero (suc .z) z refl = refl
+thin-thick (suc _) zero zero refl = refl
+thin-thick {suc m} (suc x) (suc y) zero eq with thick-res x y
+... | inj₁ e rewrite e = ⊥-elim (maybe-abs eq)
+... | inj₂ (z , e) rewrite e = ⊥-elim (fin-abs (sym (Maybeₚ.just-injective eq)))
+thin-thick {suc m} (suc x) (suc y) (suc z) eq = cong suc (thin-thick x y z (thick-suc x y z eq))
 
 check-thin : (i : Fin (suc n)) (t : UTerm u (suc n)) {t' : UTerm u n}
            → check i t ≡ just t' → t ≡ |> (thin i) <| t'
@@ -355,7 +366,7 @@ uf-comp {u = one} {m = suc m} (var x) (con ny ys) [] g eq with check x (con ny y
         rewrite <|-id t' rewrite sym (nothing-thick x z e) = 
         let ch-th-eq = check-thin x (con ny ys) ch-eq in
         trans eq (trans (cong (_<|_ g) ch-th-eq) (<|-assoc g (|> (thin x)) t'))
-      check-eq z | just z' | [ e ] = {!   !} --cong g {!   !} --(thin-thick x z' z e)
+      check-eq z | just z' | [ e ] = cong g (thin-thick x z z' e)
 
 ... | nothing | [ ch-eq ] = {!  !} -- absurd
 uf-comp {u = one} {m = suc m} (con nx xs) (var y) [] g eq with check y (con nx xs) | inspect (check y) (con nx xs)
