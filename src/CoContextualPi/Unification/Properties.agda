@@ -75,28 +75,19 @@ thick-thin (suc x) zero = refl
 thick-thin (suc x) (suc y) = cong (Maybe.map suc) (thick-thin x y)
 
 mutual
-  thick-abs : ∀(x y : Fin (suc m)) → thick (suc x) (suc y) ≡ just zero → ⊥
-  thick-abs {m = zero} zero zero ()
-  thick-abs {m = zero} zero (suc ()) _
-  thick-abs {m = suc m} zero zero ()
-  thick-abs {m = suc m} zero (suc y) ()
-  thick-abs {m = suc m} (suc x) (suc y) eq = thick-abs x y {!   !}
-
-  thick-res : ∀ (x y : Fin (suc m))(z : Fin _) → thick x y ≡ just z 
-    → Fin.toℕ z ≡ Fin.toℕ y ⊎ Fin.toℕ z ≡ ℕ.pred (Fin.toℕ y)
-  thick-res zero (suc y) .y refl = inj₂ refl
-  thick-res (suc x) zero zero refl = inj₁ refl
-  thick-res (suc x) (suc y) zero eq = ⊥-elim (thick-abs x y eq)
-  thick-res (suc x) (suc y) (suc z) eq = {!   !}
+  -- thick suc suc = suc or nothing
 
   thick-suc : ∀(x y : Fin (suc m))(z : Fin m) → thick (suc x) (suc y) ≡ just (suc z) → thick x y ≡ just z
-  thick-suc {m = m} x y z eq = {!   !}
+  thick-suc {m = m} x y z eq with thick x y | inspect (thick x) y
+  ... | nothing | [ e ] = {!   !}
+  ... | just z' | [ e ] = {!   !} --iniettività just suc
 
 thin-thick : ∀(x : Fin (suc m))(y : Fin m)(z : Fin (suc m)) → thick x z ≡ just y → z ≡ thin x y
 thin-thick zero y (suc .y) refl = refl
 thin-thick (suc x) zero zero refl = refl
-thin-thick {suc m} (suc x) zero (suc z) eq = ⊥-elim (thick-abs x z eq)
-thin-thick {suc m} (suc x) (suc y) (suc z) eq = {!   !}
+thin-thick {suc m} (suc x) zero (suc z) eq = {!   !} --⊥-elim (thick-abs x z eq)
+thin-thick {suc m} (suc x) (suc y) (suc z) eq = 
+  let eq1 = thin-thick {!   !} {!   !} {!   !} {!   !} in {!  !}
 
 check-thin : (i : Fin (suc n)) (t : UTerm u (suc n)) {t' : UTerm u n}
            → check i t ≡ just t' → t ≡ |> (thin i) <| t'
@@ -356,13 +347,15 @@ uf-comp {u = one} {m = suc m} (var x) (var y) [] g eq with thick x y | inspect (
 ... | just z | [ _ ] = _ , ([] -, x ↦ var z) , refl , g ∘ thin x , {!   !}
 uf-comp {u = one} {m = suc m} (var x) (con ny ys) [] g eq with check x (con ny ys) | inspect (check x) (con ny ys)
 ... | just t' | [ ch-eq ] = 
-  m , [] -, x ↦ t' , refl , g ∘ thin x , λ z → check-eq x t' g z
+  m , [] -, x ↦ t' , refl , g <> (|> (thin x)) , λ z → check-eq z
     where
-      check-eq : ∀ x t g z → g z ≡ (λ y → g (thin x y)) <| (var <> (t for x)) z 
-      check-eq x t g z with thick x z | inspect (thick x) z
-      check-eq x (var y) g z | nothing | [ e ] rewrite (nothing-thick x z e) = {! !}
-      check-eq x (con _ _) g z | nothing | [ e ] rewrite sym (nothing-thick x z e) = {! t  !}
-      check-eq x t g z | just z' | [ e ] = cong g {!   !} --(thin-thick x z' z e)
+      check-eq : ∀ z → g z ≡ (g <> (|> (thin x))) <| (var <> (t' for x)) z 
+      check-eq z with thick x z | inspect (thick x) z
+      check-eq z | nothing | [ e ] 
+        rewrite <|-id t' rewrite sym (nothing-thick x z e) = 
+        let ch-th-eq = check-thin x (con ny ys) ch-eq in
+        trans eq (trans (cong (_<|_ g) ch-th-eq) (<|-assoc g (|> (thin x)) t'))
+      check-eq z | just z' | [ e ] = {!   !} --cong g {!   !} --(thin-thick x z' z e)
 
 ... | nothing | [ ch-eq ] = {!  !} -- absurd
 uf-comp {u = one} {m = suc m} (con nx xs) (var y) [] g eq with check y (con nx xs) | inspect (check y) (con nx xs)
@@ -381,10 +374,10 @@ uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) acc g eq with kx ℕₚ.≟ 
                 (con-args-eq ((g <> sub acc) <| xs) ((g <> sub acc) <| ys) eq) 
                 (sym (<>-var-eq (g <> sub acc) ys))))
 uf-comp {u = one} s t (acc -, z ↦ r) g eq
-  --rewrite <|-≗ (sub-++ acc ([] -, z ↦ r)) s 
+  -- rewrite <|-≗ (sub-++ acc ([] -, z ↦ r)) s 
   rewrite sym (<|-assoc g (sub acc) ((r for z) <| s)) =
- -- with eq-assoc ← <|-assoc g (sub (acc -, z ↦ r)) s =
-  let rec = uf-comp ((r for z) <| s) ((r for z) <| t) acc g {!   !} in {!   !}
+  -- with eq-assoc ← <|-assoc g (sub (acc -, z ↦ r)) s =
+  let rec = uf-comp ((r for z) <| s) ((r for z) <| t) acc {!   !} {!   !} in {!   !}
 uf-comp {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq 
   -- amgu first computed con the heads
@@ -405,3 +398,4 @@ uf-comp {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq
 ufc : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
   → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](amgu s t (m , []) ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
 ufc s t g eq = uf-comp s t [] g eq       
+-- usare unify 
