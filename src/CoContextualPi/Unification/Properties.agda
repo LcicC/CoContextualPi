@@ -266,81 +266,6 @@ unify-sound s t | just (_ , σ) | [ eq ] = just (_ , σ , amgu-sound s t idSubst
 
 {- ########## Completeness ########## -}
 
-{- Maybe eliminator -}
-
-maybe-elim-nothing : ∀{a b}{A : Set a} {B : Maybe A → Set b} →
-        (f : (x : A) → B (just x)) → (fn : B nothing) → Maybe.maybe {A = A}{B} f fn nothing ≡ fn
-maybe-elim-nothing _ _ = refl
-
-maybe-elim-just : ∀{a b}{A : Set a} {B : Maybe A → Set b} →
-        (f : (x : A) → B (just x)) → (fn : B nothing) → (x : A) → Maybe.maybe {A = A}{B} f fn (just x) ≡ f x
-maybe-elim-just _ _ _ = refl
-
-----------------------
-
--- flexFlex x x ≡ idSubst
--- not used
-flexFlex-id : (x : Fin m) → flexFlex x x ≡ idSubst
-flexFlex-id {m = suc m} x rewrite thick-nothing x =
-   maybe-elim-nothing {B = λ _ → Σ ℕ (Subst (suc m))} (singleSubst x ∘ var) idSubst
-  --let thick-eq = thick-nothing x in 
-  --cong (λ s → Maybe.maybe (λ t → singleSubst x (var t)) idSubst s) thick-eq
-
--- not used
-flexRigid-just : ∀{x : Fin (suc m)}{t : Term (suc m)}{t' : Term m} 
-  → check x t ≡ just t' → flexRigid x t ≡ just (singleSubst x t')
-flexRigid-just eq rewrite eq = refl
-
---uf-comp : ∀(s t : UTerm u m)(acc : Subst m n) 
---  → (g : Fin m → Term l) → g <| s ≡ g <| t
---  → (h : Fin n → Term l) → g ≗ (h <> sub acc)
---  → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] (amgu s t (n , acc) ≡ just (m' , f) × Σ[ g' ∈ (Fin m' → Term l) ] g ≗ (g' <> sub f))
-
-{- amgu equalities -}
--- not used
-amgu-var-term : ∀{x : Fin (suc m)}{kx : Name k}{xs : Vec (Term (suc m)) k}{t' : Term m} 
-  → check x (con kx xs) ≡ just t' → amgu {u = one} (var x) (con kx xs) idSubst ≡ just (singleSubst x t')
-amgu-var-term {m = m}{x = x}{t}{t'} eq rewrite eq = refl
-
----------------------
-
-{- If I have a unifier - absurds -}
-
-<|-var : ∀(x : Fin m)(g : Fin m → Term n) → g <| (var x) ≡ g x
-<|-var _ _ = refl
-
-<|-con : ∀(nx : Name (suc k))(x : Term m)(xs : Vec (Term m) k)
-  → (g : Fin m → Term l) → g <| (con nx (x ∷ xs)) ≡ con nx (g <| x ∷ g <| xs)
-<|-con _ _ _ _ = refl
-
-<|-eq : ∀(x : Fin (suc m))(kx : Name (suc k))(y : Term (suc m))(xs : Vec (Term (suc m)) k)
-  → (g : Fin (suc m) → Term l) → g <| (var x) ≡ g <| (con kx (y ∷ xs))
-  → g x ≡ con kx (g <| y ∷ g <| xs)
-<|-eq x _ _ _ g eq = trans (sym (<|-var x g)) eq
-
-<|-vec : ∀(x : Term m)(xs : Vec (Term m) k)(g : Fin m → Term l) → g <| (x ∷ xs) ≡ g <| x ∷ g <| xs
-<|-vec _ _ _ = refl
-
-<|-vec-eq : ∀(x y : Term m)(xs ys : Vec (Term m) k)(g : Fin m → Term l) 
-  → g <| (x ∷ xs) ≡ g <| (y ∷ ys) → g <| x ≡ g <| y × g <| xs ≡ g <| ys
-<|-vec-eq x y xs ys g eq rewrite <|-vec x xs g = cong (λ v → Vec.head v) eq , cong (λ v → Vec.tail v) eq
-
-check-just : ∀(x : Fin (suc m))(t : UTerm _ (suc m))(g : Fin (suc m) → Term l) 
-  → g x ≡ g <| t → Σ[ t' ∈ UTerm _ m ] check x t ≡ just t'
-check-just x (var y) g eq with thick x y | inspect (thick x) y
-... | nothing | [ th-eq ] rewrite nothing-thick x y th-eq = {!   !} , {!   !}
-... | just z | [ th-eq ] = {!   !}
-check-just x (con ny ys) g eq = {!   !}
-
-var-con-check : ∀(x : Fin (suc m))(nx : Name k)(xs : Vec (Term (suc m)) k)
-  → (g : Fin (suc m) → Term l) → g x ≡ con {k = k} nx (g <| xs)
-  → Σ[ t' ∈ UTerm _ m ] check x xs ≡ just t'
-var-con-check {k = zero} _ _ [] _ _ = [] , refl
-var-con-check {k = suc k} x kx (y ∷ xs) g eq = {!   !}
-
-<>-var-eq : ∀ (g : Fin m → Term l)(t : UTerm u m) → (g <> var) <| t ≡ g <| t 
-<>-var-eq g t = refl
-
 {- Constructors equalities -}
 
 con-name-eq : ∀(nx ny : Name k){xs ys : Vec (Term m) k} → con nx xs ≡ con ny ys → nx ≡ ny
@@ -398,12 +323,7 @@ uf-comp {u = one} (con {kx} nx xs) (con {ky} ny ys) acc g eq with kx ℕₚ.≟ 
 ... | yes refl with decEqName nx ny
 ...   | no ¬eq = ⊥-elim (¬eq (con-name-eq nx ny eq))
 ...   | yes refl = 
-          uf-comp xs ys acc g 
-            (trans 
-              (<>-var-eq (g <> sub acc) xs) 
-              (trans 
-                (con-args-eq ((g <> sub acc) <| xs) ((g <> sub acc) <| ys) eq) 
-                (sym (<>-var-eq (g <> sub acc) ys))))
+          uf-comp xs ys acc g (con-args-eq ((g <> sub acc) <| xs) ((g <> sub acc) <| ys) eq)
 uf-comp {u = one} s t (acc -, z ↦ r) g eq
   -- rewrite <|-≗ (sub-++ acc ([] -, z ↦ r)) s 
   rewrite sym (<|-assoc g (sub acc) ((r for z) <| s)) =
