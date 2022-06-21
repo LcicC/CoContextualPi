@@ -143,8 +143,9 @@ sub-++ xs (ys -, i ↦ t') t
 
 postulate
   amgu-singleSubst : ∀(s t : UTerm u (suc m))(acc : Subst m n)(r : Term m)(z : Fin (suc m))(f : Subst m _) 
-    → amgu ((r for z) <| s) ((r for z) <| t) (_ , acc) ≡ just (n , f) 
-    → amgu s t (_ , (acc -, z ↦ r)) ≡ just (n , (f -, z ↦ r))
+    → amgu ((r for z) <| s) ((r for z) <| t) (n , acc) ≡ just (l , f) 
+    → amgu s t (_ , (acc -, z ↦ r)) ≡ just (l , (f -, z ↦ r))
+
 {-
 amgu-singleSubst {u = one} (var x) (var y) [] r z f eq rewrite eq = refl
 amgu-singleSubst {u = one} (var x) (con ny ys) [] r z f eq rewrite eq = refl
@@ -154,7 +155,7 @@ amgu-singleSubst {u = one} (con {kx} nx xs) (con {ky} ny ys) acc r z f () | no �
 amgu-singleSubst {u = one} (con {kx} nx xs) (con {ky} ny ys) acc r z f eq | yes refl with decEqName nx ny
 amgu-singleSubst {one} (con {kx} nx xs) (con {kx} ny ys) acc r z f () | yes refl | no _
 amgu-singleSubst {one} (con {kx} nx xs) (con {kx} ny ys) acc r z f eq | yes refl | yes refl = amgu-singleSubst xs ys acc r z f eq
-amgu-singleSubst {u = one} s t (acc -, x ↦ ss) r z f = {!   !}
+amgu-singleSubst {u = one} s t (acc -, x ↦ ss) r z f eq = {!   !}
 amgu-singleSubst {vec .zero} [] [] acc r z .acc refl = refl
 amgu-singleSubst {u = vec _} (x ∷ xs) (y ∷ ys) acc r z f eq rewrite eq = {!   !}
 -}

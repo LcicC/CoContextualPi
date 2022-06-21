@@ -73,8 +73,8 @@ amgu-complete {u = one} s t (acc -, z ↦ r) g eq
   rewrite sym (<|-assoc (g <> sub acc) (r for z) s)
   rewrite sym (<|-assoc (g <> sub acc) (r for z) t)
   with m1 , f1 , eq1 , h1 , exteq1 ← amgu-complete ((r for z) <| s) ((r for z) <| t) acc g eq = 
-  let amgu-eq = amgu-singleSubst {!  s !} t {!   !} r z {!   !} eq1 in
-  {!   !} , {!   !} , amgu-eq , h1 , {!   !}
+  let amgu-eq = amgu-singleSubst s t acc r z f1 eq1 in
+  m1 , (f1 ++ ([] -, z ↦ r)) , amgu-eq , h1 , {!   !}
 amgu-complete {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 amgu-complete {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq 
   -- amgu first computed con the heads
