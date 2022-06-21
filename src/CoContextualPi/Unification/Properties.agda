@@ -4,13 +4,14 @@ open import Relation.Nullary as ℝ using (Dec; yes; no; _because_; does)
 
 open import Data.Maybe as Maybe using (Maybe; just; nothing)
 open import Data.Product as Product using (∃; Σ; _×_; ∃-syntax; Σ-syntax; _,_; proj₁; proj₂)
-open import Data.Nat.Base as ℕ using (ℕ; zero; suc)
+open import Data.Nat.Base as ℕ using (ℕ; zero; suc; _⊔_; _≤_; z≤n; s≤s)
 open import Data.Fin.Base as Fin using (Fin; zero; suc)
 open import Data.Vec.Base as Vec using (Vec; []; _∷_)
 
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 
+import Data.Nat.Properties as ℕₚ
 import Data.Fin.Properties as Finₚ
 import Data.Maybe.Properties as Maybeₚ
 
@@ -149,4 +150,46 @@ con-arity-eq kx .kx refl = refl
 con-args-eq : ∀{nx ny : Name k}(xs ys : Vec (Term m) k) → con nx xs ≡ con ny ys → xs ≡ ys
 con-args-eq xs .xs refl = refl
 
---------------------- 
+{- ##### If I have a unifier ⇒ check must not fail ##### -}
+{- Thanks @Francesco Dagnino for the contribution -}
+
+-- Used in Unification.Completeness in amgu-complete
+-- _⊔_ computes the maximum
+
+check-nothing : (x y : Fin (suc n)) → check x (var y) ≡ nothing → thick x y ≡ nothing
+check-nothing x y eq = Maybeₚ.map-injective var-injective eq
+
+check-vec : (x : Fin (suc n)) (t : Term (suc n)) (v : Vec (Term (suc n)) k)
+            → check x (t ∷ v) ≡ nothing → check x t ≡ nothing ⊎ check x v ≡ nothing
+check-vec x t v eq with check x t
+... | nothing = inj₁ refl
+... | just s  with check x v
+...           | nothing = inj₂ refl
+...           | just w  = ⊥-elim (maybe-abs (sym eq))
+
+-- height of a term
+ht : UTerm u n → ℕ
+ht {u = one} (var _) = zero
+ht {u = one} (con _ v) = suc (ht v)
+ht {u = vec _} [] = zero
+ht {u = vec _} (t ∷ v) = (ht t) ⊔ (ht v)
+
+ht-sub : (x : Fin (suc n)) (t : UTerm u (suc n)) (g : Fin (suc n) → Term m)
+          → check x t ≡ nothing
+          → ht (g x) ≤ ht (g <| t)
+ht-sub {u = one} x (var y) g ch≡n =
+    ℕₚ.≤-reflexive (cong (ht ∘ g) (nothing-thick x y (check-nothing x y ch≡n)))
+ht-sub {u = one} x (con c v) g ch≡n =
+    let gx≤gv = ht-sub x v g (Maybeₚ.map-injective args-injective ch≡n) in
+    ℕₚ.≤-trans (ℕₚ.n≤1+n _) (s≤s gx≤gv)
+ht-sub {u = vec .(suc _)} x (t ∷ v) g ch≡n with check-vec x t v ch≡n
+... | inj₁ eqt = ℕₚ.m≤n⇒m≤n⊔o _ (ht-sub x t g eqt)
+... | inj₂ eqv = ℕₚ.m≤n⇒m≤o⊔n _ (ht-sub x v g eqv)
+
+check-⊥ : (x : Fin (suc n)) (v : Vec (Term (suc n)) k) → ∀ c → (g : Fin (suc n) → Term m)
+          → g <| (var x) ≡ g <| (con c v) → check x (con c v) ≡ nothing
+          → ⊥
+check-⊥ x v c g gx≡con ch≡n =
+    ℕₚ.1+n≰n {n = ht (g x)}
+        (ℕₚ.≤-trans (s≤s (ht-sub x v g (Maybeₚ.map-injective args-injective ch≡n)))
+                      (ℕₚ.≤-reflexive (cong ht (sym gx≡con))))
