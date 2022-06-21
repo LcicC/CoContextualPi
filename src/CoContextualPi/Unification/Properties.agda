@@ -57,6 +57,9 @@ f ≗ g = ∀ x → f x ≡ g x
 <|-≗ {u = vec _} eq [] = refl
 <|-≗ {u = vec _} eq (x ∷ xs) = cong₂ _∷_ (<|-≗ eq x) (<|-≗ eq xs)
 
+<>-assoc : (f : Fin n → Term m) (g : Fin l → Term n) (h : Fin k → Term l) → (f <> g) <> h ≗ f <> (g <> h)
+<>-assoc f g h x rewrite sym (<|-assoc f g (h x)) = refl
+
 thick-nothing : (x : Fin (suc n)) → thick x x ≡ nothing
 thick-nothing zero = refl
 thick-nothing {suc n} (suc x) rewrite thick-nothing x = refl
@@ -137,6 +140,24 @@ sub-++ xs (ys -, i ↦ t') t
 ++-assoc : (xs : Subst m n) (ys : Subst l m) (zs : Subst k l) → (xs ++ ys) ++ zs ≡ xs ++ (ys ++ zs)
 ++-assoc xs ys [] = refl
 ++-assoc xs ys (zs -, z ↦ r) = cong (_-, z ↦ r) (++-assoc xs ys zs)
+
+postulate
+  amgu-singleSubst : ∀(s t : UTerm u (suc m))(acc : Subst m n)(r : Term m)(z : Fin (suc m))(f : Subst m _) 
+    → amgu ((r for z) <| s) ((r for z) <| t) (_ , acc) ≡ just (n , f) 
+    → amgu s t (_ , (acc -, z ↦ r)) ≡ just (n , (f -, z ↦ r))
+{-
+amgu-singleSubst {u = one} (var x) (var y) [] r z f eq rewrite eq = refl
+amgu-singleSubst {u = one} (var x) (con ny ys) [] r z f eq rewrite eq = refl
+amgu-singleSubst {u = one} (con nx xs) (var y) [] r z f eq rewrite eq = refl
+amgu-singleSubst {u = one} (con {kx} nx xs) (con {ky} ny ys) acc r z f eq with kx ℕₚ.≟ ky
+amgu-singleSubst {u = one} (con {kx} nx xs) (con {ky} ny ys) acc r z f () | no ¬eq
+amgu-singleSubst {u = one} (con {kx} nx xs) (con {ky} ny ys) acc r z f eq | yes refl with decEqName nx ny
+amgu-singleSubst {one} (con {kx} nx xs) (con {kx} ny ys) acc r z f () | yes refl | no _
+amgu-singleSubst {one} (con {kx} nx xs) (con {kx} ny ys) acc r z f eq | yes refl | yes refl = amgu-singleSubst xs ys acc r z f eq
+amgu-singleSubst {u = one} s t (acc -, x ↦ ss) r z f = {!   !}
+amgu-singleSubst {vec .zero} [] [] acc r z .acc refl = refl
+amgu-singleSubst {u = vec _} (x ∷ xs) (y ∷ ys) acc r z f eq rewrite eq = {!   !}
+-}
 
 {- Constructors equalities -}
 

@@ -22,7 +22,7 @@ private
   variable
     n m l k : ℕ
     u : Univ
-
+    
 amgu-complete : ∀(s t : UTerm u m)(acc : Subst m n) 
   → (g : Fin n → Term l) → (g <> sub acc) <| s ≡ (g <> sub acc) <| t
   → Σ[ m' ∈ ℕ ] Σ[ f ∈ Subst m m' ] 
@@ -68,10 +68,13 @@ amgu-complete {u = one} (con {kx} nx xs) (con {ky} ny ys) acc g eq with kx ℕ�
 ...   | yes refl = 
           amgu-complete xs ys acc g (con-args-eq ((g <> sub acc) <| xs) ((g <> sub acc) <| ys) eq)
 amgu-complete {u = one} s t (acc -, z ↦ r) g eq
-  -- rewrite <|-≗ (sub-++ acc ([] -, z ↦ r)) s 
-  rewrite (<|-assoc g (sub acc) ((r for z) <| s)) =
-  -- with eq-assoc ← <|-assoc g (sub (acc -, z ↦ r)) s =
-  let rec = amgu-complete ((r for z) <| s) ((r for z) <| t) acc g {!   !} in {!   !}
+  rewrite sym (<|-≗ (<>-assoc g (sub acc) (r for z)) s)
+  rewrite sym (<|-≗ (<>-assoc g (sub acc) (r for z)) t)
+  rewrite sym (<|-assoc (g <> sub acc) (r for z) s)
+  rewrite sym (<|-assoc (g <> sub acc) (r for z) t)
+  with m1 , f1 , eq1 , h1 , exteq1 ← amgu-complete ((r for z) <| s) ((r for z) <| t) acc g eq = 
+  let amgu-eq = amgu-singleSubst {!  s !} t {!   !} r z {!   !} eq1 in
+  m1 , (f1 ++ ([] -, z ↦ r)) , amgu-eq , h1 , {!   !}
 amgu-complete {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 amgu-complete {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq 
   -- amgu first computed con the heads
