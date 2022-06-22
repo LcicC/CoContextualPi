@@ -74,7 +74,13 @@ amgu-complete {u = one} s t (acc -, z ↦ r) g eq
   rewrite sym (<|-assoc (g <> sub acc) (r for z) t)
   with m1 , f1 , eq1 , h1 , exteq1 ← amgu-complete ((r for z) <| s) ((r for z) <| t) acc g eq = 
   let amgu-eq = amgu-singleSubst s t acc r z f1 eq1 in
-  m1 , (f1 ++ ([] -, z ↦ r)) , amgu-eq , h1 , {!   !}
+  m1 , (f1 ++ ([] -, z ↦ r)) , amgu-eq , h1 , 
+  λ x → 
+    let exteq-<| = <|-≗ {u = one}{f = g <> sub acc}{g = h1 <> sub f1} exteq1 in
+    let eq2 = exteq-<| ((r for z) <| var x) in 
+    let g-acc-assoc = <|-assoc g (sub acc) ((r for z) <| var x) in
+    let h1-f1-assoc = <|-assoc h1 (sub f1) ((r for z) <| var x) in
+    trans g-acc-assoc (trans eq2 (sym h1-f1-assoc))
 amgu-complete {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 amgu-complete {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq 
   -- amgu first computed con the heads
@@ -94,4 +100,4 @@ amgu-complete {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq
 
 unify-complete : ∀(s t : UTerm u m) (g : Fin m → Term l) → g <| s ≡ g <| t 
   → Σ[ n ∈ ℕ ] Σ[ f ∈ Subst m n ](unify s t ≡ just (n , f) × Σ[ h ∈ (Fin n → Term l) ](g ≗ h <> sub f))
-unify-complete s t g eq = amgu-complete s t [] g eq  
+unify-complete s t g eq = amgu-complete s t [] g eq   
