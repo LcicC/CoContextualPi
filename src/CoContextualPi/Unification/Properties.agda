@@ -141,23 +141,12 @@ sub-++ xs (ys -, i ↦ t') t
 ++-assoc xs ys [] = refl
 ++-assoc xs ys (zs -, z ↦ r) = cong (_-, z ↦ r) (++-assoc xs ys zs)
 
+-- Only needed in amgu without case split on non-empty acc
+{-
 postulate
   amgu-singleSubst : ∀(s t : UTerm u (suc m))(acc : Subst m n)(r : Term m)(z : Fin (suc m))(f : Subst m _) 
-    → amgu ((r for z) <| s) ((r for z) <| t) (n , acc) ≡ just (l , f) 
-    → amgu s t (_ , (acc -, z ↦ r)) ≡ just (l , (f -, z ↦ r))
-
-{-
-amgu-singleSubst {u = one} (var x) (var y) [] r z f eq rewrite eq = refl
-amgu-singleSubst {u = one} (var x) (con ny ys) [] r z f eq rewrite eq = refl
-amgu-singleSubst {u = one} (con nx xs) (var y) [] r z f eq rewrite eq = refl
-amgu-singleSubst {u = one} (con {kx} nx xs) (con {ky} ny ys) acc r z f eq with kx ℕₚ.≟ ky
-amgu-singleSubst {u = one} (con {kx} nx xs) (con {ky} ny ys) acc r z f () | no ¬eq
-amgu-singleSubst {u = one} (con {kx} nx xs) (con {ky} ny ys) acc r z f eq | yes refl with decEqName nx ny
-amgu-singleSubst {one} (con {kx} nx xs) (con {kx} ny ys) acc r z f () | yes refl | no _
-amgu-singleSubst {one} (con {kx} nx xs) (con {kx} ny ys) acc r z f eq | yes refl | yes refl = amgu-singleSubst xs ys acc r z f eq
-amgu-singleSubst {u = one} s t (acc -, x ↦ ss) r z f eq = {!   !}
-amgu-singleSubst {vec .zero} [] [] acc r z .acc refl = refl
-amgu-singleSubst {u = vec _} (x ∷ xs) (y ∷ ys) acc r z f eq rewrite eq = {!   !}
+      → amgu ((r for z) <| s) ((r for z) <| t) (n , acc) ≡ just (l , f) 
+      → amgu s t (_ , (acc -, z ↦ r)) ≡ just (l , (f -, z ↦ r))
 -}
 
 {- Constructors equalities -}
@@ -215,3 +204,52 @@ check-⊥ x v c g gx≡con ch≡n =
     ℕₚ.1+n≰n {n = ht (g x)}
         (ℕₚ.≤-trans (s≤s (ht-sub x v g (Maybeₚ.map-injective args-injective ch≡n)))
                       (ℕₚ.≤-reflexive (cong ht (sym gx≡con))))
+
+{- amgu properties -}
+  
+amgu-step : (acc : Subst m n) (z : Fin (suc m)) (r : Term m) (s t : UTerm u (suc m))
+          → amgu s t (_ , acc -, z ↦ r)
+          ≡ Maybe.map (Product.map₂ (_-, z ↦ r)) (amgu (r for z <| s) (r for z <| t) (_ , acc))
+amgu-step {u = one} acc z r (var x) (var y) = refl
+amgu-step {u = one} acc z r (var x) (con ny asy) = refl
+amgu-step {u = one} acc z r (con nx asx) (var y) = refl
+amgu-step {u = one} acc z r (con {kx} nx asx) (con {ky} ny asy) with kx ℕₚ.≟ ky
+amgu-step {u = one} acc z r (con {kx} nx asx) (con {ky} ny asy) | no kx≢ky = refl
+amgu-step {u = one} acc z r (con {kx} nx asx) (con {ky} ny asy) | yes refl with decEqName nx ny
+amgu-step {u = one} acc z r (con {kx} nx asx) (con {ky} ny asy) | yes refl | no nx≢ny = refl
+amgu-step {u = one} acc z r (con {kx} nx asx) (con {ky} ny asy) | yes refl | yes refl = amgu-step acc z r asx asy
+amgu-step {u = vec _} acc z r [] [] = refl
+amgu-step {u = vec _} acc z r (x ∷ xs) (y ∷ ys)
+    with amgu (r for z <| x) (r for z <| y) (_ , acc)
+       | inspect (amgu (r for z <| x) (r for z <| y)) (_ , acc)
+... | nothing | [ eq ] rewrite amgu-step acc z r x y | eq = refl
+... | just (_ , acc') | [ eq ]
+      with amgu (r for z <| xs) (r for z <| ys) (_ , acc')
+        | inspect (amgu (r for z <| xs) (r for z <| ys)) (_ , acc')
+...   | nothing | [ qe ] rewrite amgu-step acc z r x y | eq | amgu-step acc' z r xs ys | qe = refl
+...   | just (_ , acc'') | [ qe ] rewrite amgu-step acc z r x y | eq | amgu-step acc' z r xs ys | qe = refl
+
+amgu-acc : (s t : UTerm u m) (acc : Subst m n) {σ : Subst m l}
+         → amgu s t (_ , acc) ≡ just (l , σ)
+         → ∃[ found ] (σ ≡ found ++ acc)
+amgu-acc {vec _} [] [] acc refl = _ , sym (++-id _)
+amgu-acc {vec _} (x ∷ xs) (y ∷ ys) acc eq
+  with just (_ , acc') ← amgu x y (_ , acc)
+       | [ xyeq ] ← inspect (amgu x y) (_ , acc)
+  with just (_ , acc'') ← amgu xs ys (_ , acc')
+       | [ xsyseq ] ← inspect (amgu xs ys) (_ , acc')
+  with _ , refl ← amgu-acc x y acc xyeq
+  with _ , refl ← amgu-acc xs ys acc' xsyseq
+  with refl ← eq
+  = _ , sym (++-assoc _ _ acc)
+amgu-acc {one} (var x) (var y) [] eq = _ , refl
+amgu-acc {one} (var x) (con ny asy) [] eq = _ , refl
+amgu-acc {one} (con nx asx) (var y) [] eq = _ , refl
+amgu-acc {one} (con {kx} nx asx) (con {ky} ny asy) [] eq = _ , refl
+amgu-acc {one} s t (acc -, z ↦ r) eq
+  rewrite amgu-step acc z r s t
+  with just (_ , acc') ← amgu (r for z <| s) (r for z <| t) (_ , acc)
+       | [ steq ] ← inspect (amgu (r for z <| s) (r for z <| t)) (_ , acc)
+  with refl ← eq
+  with _ , refl ← amgu-acc (r for z <| s) (r for z <| t) acc steq
+  = _ , refl

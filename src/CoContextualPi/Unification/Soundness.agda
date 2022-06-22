@@ -43,55 +43,6 @@ flexRigid-sound {suc m} x t refl | just t' | [ eq ]
       ∎
     where open ≡.≡-Reasoning
 
-amgu-step : (acc : Subst m n) (z : Fin (suc m)) (r : Term m) (s t : UTerm u (suc m))
-          → amgu s t (_ , acc -, z ↦ r)
-          ≡ Maybe.map (Product.map₂ (_-, z ↦ r)) (amgu (r for z <| s) (r for z <| t) (_ , acc))
-amgu-step {u = one} acc z r (var x) (var y) = refl
-amgu-step {u = one} acc z r (var x) (con ny asy) = refl
-amgu-step {u = one} acc z r (con nx asx) (var y) = refl
-amgu-step {u = one} acc z r (con {kx} nx asx) (con {ky} ny asy) with kx ℕₚ.≟ ky
-amgu-step {u = one} acc z r (con {kx} nx asx) (con {ky} ny asy) | no kx≢ky = refl
-amgu-step {u = one} acc z r (con {kx} nx asx) (con {ky} ny asy) | yes refl with decEqName nx ny
-amgu-step {u = one} acc z r (con {kx} nx asx) (con {ky} ny asy) | yes refl | no nx≢ny = refl
-amgu-step {u = one} acc z r (con {kx} nx asx) (con {ky} ny asy) | yes refl | yes refl = amgu-step acc z r asx asy
-amgu-step {u = vec _} acc z r [] [] = refl
-amgu-step {u = vec _} acc z r (x ∷ xs) (y ∷ ys)
-    with amgu (r for z <| x) (r for z <| y) (_ , acc)
-       | inspect (amgu (r for z <| x) (r for z <| y)) (_ , acc)
-... | nothing | [ eq ] rewrite amgu-step acc z r x y | eq = refl
-... | just (_ , acc') | [ eq ]
-      with amgu (r for z <| xs) (r for z <| ys) (_ , acc')
-        | inspect (amgu (r for z <| xs) (r for z <| ys)) (_ , acc')
-...   | nothing | [ qe ] rewrite amgu-step acc z r x y | eq | amgu-step acc' z r xs ys | qe = refl
-...   | just (_ , acc'') | [ qe ] rewrite amgu-step acc z r x y | eq | amgu-step acc' z r xs ys | qe = refl
-
-
-amgu-acc : (s t : UTerm u m) (acc : Subst m n) {σ : Subst m l}
-         → amgu s t (_ , acc) ≡ just (l , σ)
-         → ∃[ found ] (σ ≡ found ++ acc)
-amgu-acc {vec _} [] [] acc refl = _ , sym (++-id _)
-amgu-acc {vec _} (x ∷ xs) (y ∷ ys) acc eq
-  with just (_ , acc') ← amgu x y (_ , acc)
-       | [ xyeq ] ← inspect (amgu x y) (_ , acc)
-  with just (_ , acc'') ← amgu xs ys (_ , acc')
-       | [ xsyseq ] ← inspect (amgu xs ys) (_ , acc')
-  with _ , refl ← amgu-acc x y acc xyeq
-  with _ , refl ← amgu-acc xs ys acc' xsyseq
-  with refl ← eq
-  = _ , sym (++-assoc _ _ acc)
-amgu-acc {one} (var x) (var y) [] eq = _ , refl
-amgu-acc {one} (var x) (con ny asy) [] eq = _ , refl
-amgu-acc {one} (con nx asx) (var y) [] eq = _ , refl
-amgu-acc {one} (con {kx} nx asx) (con {ky} ny asy) [] eq = _ , refl
-amgu-acc {one} s t (acc -, z ↦ r) eq
-  rewrite amgu-step acc z r s t
-  with just (_ , acc') ← amgu (r for z <| s) (r for z <| t) (_ , acc)
-       | [ steq ] ← inspect (amgu (r for z <| s) (r for z <| t)) (_ , acc)
-  with refl ← eq
-  with _ , refl ← amgu-acc (r for z <| s) (r for z <| t) acc steq
-  = _ , refl
-
-
 amgu-sound : (s t : UTerm u m) (acc : ∃ (Subst m)) {σ : Subst m l}
            → amgu s t acc ≡ just (l , σ) → sub σ <| s ≡ sub σ <| t
 amgu-sound {vec _} [] [] acc eq = refl

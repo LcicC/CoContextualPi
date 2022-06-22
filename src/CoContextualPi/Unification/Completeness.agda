@@ -10,6 +10,8 @@ open import Data.Vec.Base as Vec using (Vec; []; _∷_)
 
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Category.Functor
+open import Data.Maybe.Categorical as maybeCat
 
 import Data.Nat.Properties as ℕₚ
 
@@ -22,6 +24,8 @@ private
   variable
     n m l k : ℕ
     u : Univ
+  open RawFunctor {{...}}
+  instance maybeFunctor = maybeCat.functor
     
 amgu-complete : ∀(s t : UTerm u m)(acc : Subst m n) 
   → (g : Fin n → Term l) → (g <> sub acc) <| s ≡ (g <> sub acc) <| t
@@ -73,13 +77,12 @@ amgu-complete {u = one} s t (acc -, z ↦ r) g eq
   rewrite sym (<|-assoc (g <> sub acc) (r for z) s)
   rewrite sym (<|-assoc (g <> sub acc) (r for z) t)
   with m1 , f1 , eq1 , h1 , exteq1 ← amgu-complete ((r for z) <| s) ((r for z) <| t) acc g eq = 
-  let amgu-eq = amgu-singleSubst s t acc r z f1 eq1 in
-  m1 , (f1 ++ ([] -, z ↦ r)) , amgu-eq , h1 , 
-  λ x → 
+  m1 , (f1 -, z ↦ r) , trans (amgu-step acc z r s t) (cong (_<$>_ (Product.map₂ λ ss → ss -, z ↦ r)) eq1) , h1 , 
+  λ xx → 
     let exteq-<| = <|-≗ {u = one}{f = g <> sub acc}{g = h1 <> sub f1} exteq1 in
-    let eq2 = exteq-<| ((r for z) <| var x) in 
-    let g-acc-assoc = <|-assoc g (sub acc) ((r for z) <| var x) in
-    let h1-f1-assoc = <|-assoc h1 (sub f1) ((r for z) <| var x) in
+    let eq2 = exteq-<| ((r for z) <| var xx) in 
+    let g-acc-assoc = <|-assoc g (sub acc) ((r for z) <| var xx) in
+    let h1-f1-assoc = <|-assoc h1 (sub f1) ((r for z) <| var xx) in
     trans g-acc-assoc (trans eq2 (sym h1-f1-assoc))
 amgu-complete {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 amgu-complete {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq 

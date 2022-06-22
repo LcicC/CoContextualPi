@@ -179,13 +179,11 @@ flexFlex : Fin m → Fin m → ∃ (Subst m)
 flexFlex {suc m} x y = 
   Maybe.maybe {B = λ _ → Σ ℕ (Subst (suc m))} (singleSubst x ∘ var) idSubst (thick x y)
 
-
 -- Substitute variable x with term t
 flexRigid : Fin m → Term m → Maybe (∃ (Subst m))
 flexRigid {suc m} x t = 
   Maybe.maybe {B = λ _ → Maybe (Σ ℕ (Subst (suc m)))} (λ t' → just (singleSubst x t')) nothing (check x t)
 --singleSubst x <$> check x t
-
 
 amgu : UTerm u m → UTerm u m → ∃ (Subst m) → Maybe(∃ (Subst m))
 amgu {u = vec _} [] [] acc              = just acc
@@ -201,7 +199,6 @@ amgu {u = one} (con {kx} nx asx) (con {ky} ny asy) acc
 ...            | true = amgu asx asy acc
 amgu {u = one} s t (_ , acc -, z ↦ r) =
   Product.map₂ (_-, z ↦ r) <$> amgu (r for z <| s) (r for z <| t) (_ , acc)
-
 
 unify : UTerm u m → UTerm u m → Maybe(∃ (Subst m))
 unify s t = amgu s t idSubst
