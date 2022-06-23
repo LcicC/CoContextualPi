@@ -80,9 +80,9 @@ amgu-complete {u = one} s t (acc -, z ↦ r) g eq
   m1 , (f1 -, z ↦ r) , trans (amgu-step acc z r s t) (cong (_<$>_ (Product.map₂ λ ss → ss -, z ↦ r)) eq1) , h1 , 
   λ xx → 
     let exteq-<| = <|-≗ {u = one}{f = g <> sub acc}{g = h1 <> sub f1} exteq1 in
-    let eq2 = exteq-<| ((r for z) <| var xx) in 
-    let g-acc-assoc = <|-assoc g (sub acc) ((r for z) <| var xx) in
-    let h1-f1-assoc = <|-assoc h1 (sub f1) ((r for z) <| var xx) in
+    let eq2 = exteq-<| ((r for z) xx) in 
+    let g-acc-assoc = <|-assoc g (sub acc) ((r for z) xx) in
+    let h1-f1-assoc = <|-assoc h1 (sub f1) ((r for z) xx) in
     trans g-acc-assoc (trans eq2 (sym h1-f1-assoc))
 amgu-complete {u = vec _} [] [] acc g eq = _ , acc , refl , g , λ _ → refl
 amgu-complete {u = vec _} (x ∷ xs) (y ∷ ys) acc g eq 
