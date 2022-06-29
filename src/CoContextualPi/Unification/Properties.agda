@@ -141,14 +141,6 @@ sub-++ xs (ys -, i ↦ t') t
 ++-assoc xs ys [] = refl
 ++-assoc xs ys (zs -, z ↦ r) = cong (_-, z ↦ r) (++-assoc xs ys zs)
 
--- Only needed in amgu without case split on non-empty acc
-{-
-postulate
-  amgu-singleSubst : ∀(s t : UTerm u (suc m))(acc : Subst m n)(r : Term m)(z : Fin (suc m))(f : Subst m _) 
-      → amgu ((r for z) <| s) ((r for z) <| t) (n , acc) ≡ just (l , f) 
-      → amgu s t (_ , (acc -, z ↦ r)) ≡ just (l , (f -, z ↦ r))
--}
-
 {- Constructors equalities -}
 
 con-name-eq : ∀(nx ny : Name k){xs ys : Vec (Term m) k} → con nx xs ≡ con ny ys → nx ≡ ny
@@ -162,7 +154,7 @@ con-args-eq : ∀{nx ny : Name k}(xs ys : Vec (Term m) k) → con nx xs ≡ con 
 con-args-eq xs .xs refl = refl
 
 {- ##### If I have a unifier ⇒ check must not fail ##### -}
-{- Thanks @Francesco Dagnino for the contribution -}
+{- Thanks @Francesco Dagnino (https://fdgn.github.io) for the contribution -}
 
 -- Used in Unification.Completeness in amgu-complete
 -- _⊔_ computes the maximum
