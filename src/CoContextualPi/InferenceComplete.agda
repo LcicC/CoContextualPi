@@ -27,7 +27,10 @@ iExp-comp1 : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m)
   → Σ[ m' ∈ ℕ ] Σ[ t ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ] Σ[ pr' ∈ Δ ⊢ e ∶ t ] inferExpr e ≡ just (m' , t , Δ , pr')
 iExp-comp1 n m .top .‵⊤ Γ top = n , ‵⊤ , fresh , top , refl
 iExp-comp1 n m .(var _) s Γ (var x) = n , Vec.lookup fresh _ , fresh , var refl , refl
-iExp-comp1 n m (fst e) s Γ (fst prΓ) = {!   !} , {!   !} , {!   !} , {!   !} , {!   !} 
+iExp-comp1 n m (fst e) s Γ (fst prΓ) = 
+  let m' , t , Δ , pr' , eq = iExp-comp1 n m e (s ‵× _) Γ prΓ in 
+  let shape = var zero ‵× var (suc (zero {zero})) in
+  {!   !} , {!   !} , {!   !} , {!   !} , {!  !} 
 iExp-comp1 n m .(snd _) s Γ (snd prΓ) = {!   !}
 iExp-comp1 n m .(inl _) .(_ ‵+ _) Γ (inl prΓ) = {!   !}
 iExp-comp1 n m .(inr _) .(_ ‵+ _) Γ (inr prΓ) = {!   !}
