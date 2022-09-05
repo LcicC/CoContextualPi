@@ -24,35 +24,17 @@ module CoContextualPi.InferenceComplete where
 -- If e is well-typed, inferExpr e returns just _
 iExp-comp1 : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m) 
   → Γ ⊢ e ∶ s 
-  → Σ[ m' ∈ ℕ ] Σ[ t ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ] Σ[ pr' ∈ Δ ⊢ e ∶ t ] inferExpr e ≡ just (m' , t , Δ , pr')
-iExp-comp1 n m .top .‵⊤ Γ top = n , ‵⊤ , fresh , top , refl
-iExp-comp1 n m .(var _) s Γ (var x) = n , Vec.lookup fresh _ , fresh , var refl , refl
-iExp-comp1 n m (fst e) s Γ (fst prΓ) = 
-  let m' , t , Δ , pr' , eq = iExp-comp1 n m e (s ‵× _) Γ prΓ in 
-  let shape = var zero ‵× var (suc (zero {zero})) in
-  {!   !} , {!   !} , {!   !} , {!   !} , {!  !} 
-iExp-comp1 n m .(snd _) s Γ (snd prΓ) = {!   !}
-iExp-comp1 n m .(inl _) .(_ ‵+ _) Γ (inl prΓ) = {!   !}
-iExp-comp1 n m .(inr _) .(_ ‵+ _) Γ (inr prΓ) = {!   !}
-iExp-comp1 n m .(_ ‵, _) .(_ ‵× _) Γ (prΓ ‵, prΓ₁) = {!   !}
+  → Σ[ m' ∈ ℕ ] Σ[ t ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ] inferE e ≡ just (m' , t , Δ)
+iExp-comp1 n m e s Γ pr = {!   !}
 
 -- inferExpr returns the most general solution
-iExp-comp2 : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m)(pr : Γ ⊢ e ∶ s)
-  → inferExpr e ≡ just (m , s , Γ , pr)
+iExp-comp2 : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m)
+  → inferE e ≡ just (m , s , Γ)
   → ∀ (m' : ℕ)(t : Type m')(Δ : Ctx n m') → Δ ⊢ e ∶ t
   → Σ[ σ ∈ (Fin m → Type m') ] σ <| Γ ≡ Δ × σ <| s ≡ t
-iExp-comp2 n .n .top .‵⊤ .fresh top refl m' .‵⊤ Δ top = {!  !} , {!   !} , refl
-iExp-comp2 n m .(var _) s Γ (var x) eq m' t Δ prΔ = {!   !}
-iExp-comp2 n m .(fst _) s Γ (fst prΓ) eq m' t Δ prΔ = {!   !}
-iExp-comp2 n m .(snd _) s Γ (snd prΓ) eq m' t Δ prΔ = {!   !}
-iExp-comp2 n m .(inl _) .(_ ‵+ _) Γ (inl prΓ) eq m' t Δ prΔ = {!   !}
-iExp-comp2 n m .(inr _) .(_ ‵+ _) Γ (inr prΓ) eq m' t Δ prΔ = {!   !}
-iExp-comp2 n m .(_ ‵, _) .(_ ‵× _) Γ (prΓ ‵, prΓ₁) eq m' t Δ prΔ = {!   !}
+iExp-comp2 n m e s Γ eq m' t Δ eqΔ = {!   !}
 
 iExp-comp : ∀(n m : ℕ)(e : Expr n)(t : Type m)(Γ : Ctx n m)
-  → (pr : Γ ⊢ e ∶ t) → Σ[ m' ∈ ℕ ] Σ[ s ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ] Σ[ pr' ∈ Δ ⊢ e ∶ s ] 
-  inferExpr e ≡ just (m' , s , Δ , pr') × (Σ[ σ ∈ (Fin m' → Type m) ] σ <| Δ ≡ Γ × σ <| s ≡ t)
-iExp-comp n m e t Γ prΓ = 
-  let m' , s , Δ , prΔ , eq = iExp-comp1 n m e t Γ prΓ in 
-  let σ , eq1 , eq2 = iExp-comp2 n m' e s Δ prΔ eq m t Γ prΓ in 
-  m' , s , Δ , prΔ , eq , σ , eq1 , eq2
+  → (pr : Γ ⊢ e ∶ t) → Σ[ m' ∈ ℕ ] Σ[ s ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ]
+  inferE e ≡ just (m' , s , Δ) × (Σ[ σ ∈ (Fin m' → Type m) ] σ <| Δ ≡ Γ × σ <| s ≡ t)
+iExp-comp n m e t Γ prΓ = {!   !}
