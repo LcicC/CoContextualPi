@@ -25,7 +25,13 @@ module CoContextualPi.InferenceComplete where
 iExp-comp1 : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m) 
   → Γ ⊢ e ∶ s 
   → Σ[ m' ∈ ℕ ] Σ[ t ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ] inferE e ≡ just (m' , t , Δ)
-iExp-comp1 n m e s Γ pr = {!   !}
+iExp-comp1 n m .top .‵⊤ Γ top = n , ‵⊤ , fresh , refl
+iExp-comp1 n m (var x) s Γ (var pr-in) = n , Vec.lookup fresh x , fresh , refl
+iExp-comp1 n m .(fst _) s Γ (fst pr) = {!   !}
+iExp-comp1 n m .(snd _) s Γ (snd pr) = {!   !}
+iExp-comp1 n m .(inl _) .(_ ‵+ _) Γ (inl pr) = {!   !}
+iExp-comp1 n m .(inr _) .(_ ‵+ _) Γ (inr pr) = {!   !}
+iExp-comp1 n m .(_ ‵, _) .(_ ‵× _) Γ (pr ‵, pr₁) = {!   !}
 
 -- inferExpr returns the most general solution
 iExp-comp2 : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m)

@@ -90,7 +90,7 @@ _<|[_] σ = (sub σ) <|_ ∘ <[_]
 [_]|>_ : UType u m → Subst (n ℕ.+ m) l → UType u l
 [_]|>_ x σ = (sub σ) <| [ x ]>
 
-inferE : (e : Expr n) → Maybe (Σ[ m ∈ ℕ ] Σ[ t ∈ Type m ] Ctx n m)
+inferE : (e : Expr n) → Maybe (Σ[ m ∈ ℕ ] Type m × Ctx n m)
 inferE top      = return (! ‵⊤ , fresh)
 inferE (var x)  = return (! Vec.lookup fresh x , fresh)
 inferE (fst e)  = do ! t , Γ₁ ← inferE e
@@ -107,7 +107,7 @@ inferE (inr e)  = do ! t , Γ₁ ← inferE e
                      return (! <[ var (zero {zero}) ] ‵+ [_]> {m = 1} t , [ Γ₁ ]>)
 inferE (e ‵, f) = do ! t , Γ₁ ← inferE e
                      ! s , Γ₂ ← inferE f
-                     ! σ , sound ← <[ Γ₁ ] == [ Γ₂ ]>
+                     ! σ ← unify <[ Γ₁ ] [ Γ₂ ]>
                      return (! (σ <|[ t ]) ‵× ([ s ]|> σ) , σ <|[ Γ₁ ])
 
 {- TODO: inferP from inferP-sound -}
