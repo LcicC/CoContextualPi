@@ -35,8 +35,8 @@ iExp-comp1 n m (fst e) s Γ (fst {t = s} {s = t} pr)  with iExp-comp1 n m e (s �
                 (sub (subst 
                         (λ x → Subst x m') 
                         (sym (trans (ℕₚ.+-suc m' 1) (cong suc (trans (ℕₚ.+-suc m' 0) (cong suc (ℕₚ.+-identityʳ m')))))) 
-                        (([] -, zero ↦ {!   !}) -, suc zero ↦ {!   !})))
-                {!   !} in
+                        (([] -, Fin.fromℕ m' ↦ {!   !}) -, Fin.fromℕ (suc m') ↦ {!   !})))
+                {!  refl !} in
     {!   !}
 -- comporre eqΔ e un-eq 
 
