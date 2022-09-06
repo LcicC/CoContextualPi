@@ -31,6 +31,8 @@ open import CoContextualPi.Unification Cons Cons-dec as Unification
   renaming (Term to Type; UTerm to UType) public
 open import CoContextualPi.Unification.Soundness Cons Cons-dec
   using (unify-sound) public
+open import CoContextualPi.Unification.Completeness Cons Cons-dec
+  using (unify-complete) public
 
 
 infixr 25 #_

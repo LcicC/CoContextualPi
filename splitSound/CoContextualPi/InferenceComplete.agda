@@ -27,7 +27,19 @@ iExp-comp1 : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m)
   → Σ[ m' ∈ ℕ ] Σ[ t ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ] inferE e ≡ just (m' , t , Δ)
 iExp-comp1 n m .top .‵⊤ Γ top = n , ‵⊤ , fresh , refl
 iExp-comp1 n m (var x) s Γ (var pr-in) = n , Vec.lookup fresh x , fresh , refl
-iExp-comp1 n m .(fst _) s Γ (fst pr) = {!   !}
+iExp-comp1 n m (fst e) s Γ (fst {t = s} {s = t} pr)  with iExp-comp1 n m e (s ‵× t) Γ pr
+... | m' , t' , Δ , eqΔ = 
+  let n' , σ , unify-eq , ext-eq = unify-complete {m = m' ℕ.+ 2} {l = m'} 
+                <[ t' ] 
+                [ var zero ‵× var (suc (zero {zero})) ]> 
+                (sub (subst 
+                        (λ x → Subst x m') 
+                        (sym (trans (ℕₚ.+-suc m' 1) (cong suc (trans (ℕₚ.+-suc m' 0) (cong suc (ℕₚ.+-identityʳ m')))))) 
+                        (([] -, zero ↦ {!   !}) -, suc zero ↦ {!   !})))
+                {!   !} in
+    {!   !}
+-- comporre eqΔ e un-eq 
+
 iExp-comp1 n m .(snd _) s Γ (snd pr) = {!   !}
 iExp-comp1 n m .(inl _) .(_ ‵+ _) Γ (inl pr) = {!   !}
 iExp-comp1 n m .(inr _) .(_ ‵+ _) Γ (inr pr) = {!   !}
