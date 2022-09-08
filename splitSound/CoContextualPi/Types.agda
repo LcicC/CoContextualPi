@@ -33,6 +33,7 @@ open import CoContextualPi.Unification.Soundness Cons Cons-dec
   using (unify-sound) public
 open import CoContextualPi.Unification.Completeness Cons Cons-dec
   using (unify-complete) public
+open import CoContextualPi.Unification.Properties Cons Cons-dec public
 
 
 infixr 25 #_

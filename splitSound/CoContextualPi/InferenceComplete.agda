@@ -21,37 +21,6 @@ open import CoContextualPi.Inference
 
 module CoContextualPi.InferenceComplete where
 
-aux : ∀{n m} → (Fin m → Type n) → Fin (n ℕ.+ m) → Type n
-aux {n} {zero}  f x = {!   !}
-aux {zero} {suc m} f x = f x 
-aux {suc n} {suc m} f zero  = var zero 
-aux {suc n} {suc m} f (suc x) = {!   !}
-
--- If e is well-typed, inferExpr e returns just _
-iExp-comp1 : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m) 
-  → Γ ⊢ e ∶ s 
-  → Σ[ m' ∈ ℕ ] Σ[ t ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ] inferE e ≡ just (m' , t , Δ)
-iExp-comp1 n m .top .‵⊤ Γ top = n , ‵⊤ , fresh , refl
-iExp-comp1 n m (var x) s Γ (var pr-in) = n , Vec.lookup fresh x , fresh , refl
-iExp-comp1 n m (fst e) s Γ (fst {t = s} {s = t} pr)  with iExp-comp1 n m e (s ‵× t) Γ pr
-... | m' , t' , Δ , eqΔ 
-  with unify-complete {m = m' ℕ.+ 2} {l = m'} 
-                <[ t' ] 
-                [ var zero ‵× var (suc (zero {zero})) ]> 
-                (aux {m'} {2} (λ{zero → {!  !} ; (suc zero) → {!   !}}))
-                --(sub (subst 
-                  --      (λ x → Subst x m') 
-                    --    (sym (trans (ℕₚ.+-suc m' 1) (cong suc (trans (ℕₚ.+-suc m' 0) (cong suc (ℕₚ.+-identityʳ m')))))) 
-                      --  (([] -, Fin.fromℕ m' ↦ {!   !}) -, Fin.fromℕ (suc m') ↦ {!   !})))
-                {!  refl !} 
-... | n' , σ , unify-eq , _ = n' , ([ var zero ]|> σ) , (σ <|[ Δ ]) , {!  !}
--- comporre eqΔ e un-eq 
-
-iExp-comp1 n m .(snd _) s Γ (snd pr) = {!   !}
-iExp-comp1 n m .(inl _) .(_ ‵+ _) Γ (inl pr) = {!   !}
-iExp-comp1 n m .(inr _) .(_ ‵+ _) Γ (inr pr) = {!   !}
-iExp-comp1 n m .(_ ‵, _) .(_ ‵× _) Γ (pr ‵, pr₁) = {!   !}
-
 fresh-lookup-id : ∀{n m}(Γ : Ctx n m) → Vec.lookup Γ <| fresh ≡ Γ
 fresh-lookup-id {zero} [] = refl
 fresh-lookup-id {suc n} (x ∷ Γ) with fresh-lookup-id Γ
@@ -71,7 +40,16 @@ iExp-comp n m .top .‵⊤ Γ top  =
 iExp-comp n m (var x) .(Vec.lookup Γ x) Γ (var refl) = 
   n , Vec.lookup fresh x , fresh , refl , Vec.lookup Γ , fresh-lookup-id Γ , 
   subst (λ y → Vec.lookup Γ <| y ≡ Vec.lookup Γ x) (sym (fresh-lookup-var x)) refl
-iExp-comp n m .(fst _) s Γ (fst prΓ) = {!   !}
+iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ) with iExp-comp n m e (s ‵× t) Γ prΓ
+... | m' , t' , Δ , eqΔ , (σ , σΔ≡Γ , σt'≡s×t)
+      with unify-complete {m = m' ℕ.+ 2} {l = m} 
+                <[ t' ] [ var zero ‵× var (suc (zero {zero})) ]> 
+                (merge σ λ{zero → s ; (suc zero) → t}) 
+                (trans 
+                  (merge-eq-l σ _ t') 
+                  (trans (trans σt'≡s×t refl) 
+                    (sym (merge-eq-r σ _ (var zero ‵× var (suc (zero {zero})))))))
+... | n' , σ' , unify-eq , _ = n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , {!   !} , ({!   !} , {!   !} , {!   !})
 iExp-comp n m .(snd _) s Γ (snd prΓ) = {!   !}
 iExp-comp n m .(inl _) .(_ ‵+ _) Γ (inl prΓ) = {!   !}
 iExp-comp n m .(inr _) .(_ ‵+ _) Γ (inr prΓ) = {!   !}

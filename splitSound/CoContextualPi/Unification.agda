@@ -110,6 +110,24 @@ _<|_ {u = vec k} f (x ∷ xs) = f <| x ∷ f <| xs
 _<>_ : (Fin m → Term n) → (Fin l → Term m) → (Fin l → Term n)
 f <> g = f <|_ ∘ g
 
+<< : Fin n → Fin (n ℕ.+ m)
+<< i = Fin.inject≤ i (ℕₚ.m≤m+n _ _)
+
+>> : Fin n → Fin (m ℕ.+ n)
+>> = Fin.raise _
+
+<[_] : UTerm u n → UTerm u (n ℕ.+ m)
+<[_] = |> << <|_
+
+[_]> : UTerm u n → UTerm u (m ℕ.+ n)
+[_]> = |> >> <|_
+
+-- Merge two substitutions
+merge : (Fin n → Term l) → (Fin m → Term l) → Fin (n ℕ.+ m) → Term l 
+merge {zero} f g  = g
+merge {suc n} f g zero = f zero 
+merge {suc n} f g (suc x) = merge (f ∘ suc) g x
+
 
 -- Push in and push out\
 --
@@ -159,6 +177,12 @@ xs ++ (ys -, z ↦ r) = (xs ++ ys) -, z ↦ r
 sub : Subst m n → Fin m → Term n
 sub [] = var
 sub (σs -, x ↦ t) = sub σs <> (t for x)
+
+_<|[_] : Subst (n ℕ.+ m) l → UTerm u n → UTerm u l
+_<|[_] σ = (sub σ) <|_ ∘ <[_]
+
+[_]|>_ : UTerm u m → Subst (n ℕ.+ m) l → UTerm u l
+[_]|>_ x σ = (sub σ) <| [ x ]>
 
 
 -- Occurs check, lowers the term if the variable is not present

@@ -72,24 +72,6 @@ pattern !_ t = _ , t
 
 _==_ = unify-sound
 
-<< : Fin n → Fin (n ℕ.+ m)
-<< i = Fin.inject≤ i (ℕₚ.m≤m+n _ _)
-
->> : Fin n → Fin (m ℕ.+ n)
->> = Fin.raise _
-
-<[_] : UType u n → UType u (n ℕ.+ m)
-<[_] = |> << <|_
-
-_<|[_] : Subst (n ℕ.+ m) l → UType u n → UType u l
-_<|[_] σ = (sub σ) <|_ ∘ <[_]
-
-[_]> : UType u n → UType u (m ℕ.+ n)
-[_]> = |> >> <|_
-
-[_]|>_ : UType u m → Subst (n ℕ.+ m) l → UType u l
-[_]|>_ x σ = (sub σ) <| [ x ]>
-
 inferE : (e : Expr n) → Maybe (Σ[ m ∈ ℕ ] Type m × Ctx n m)
 inferE top      = return (! ‵⊤ , fresh)
 inferE (var x)  = return (! Vec.lookup fresh x , fresh)
