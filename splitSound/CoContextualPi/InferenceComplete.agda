@@ -52,17 +52,25 @@ iExp-comp1 n m .(inl _) .(_ ‵+ _) Γ (inl pr) = {!   !}
 iExp-comp1 n m .(inr _) .(_ ‵+ _) Γ (inr pr) = {!   !}
 iExp-comp1 n m .(_ ‵, _) .(_ ‵× _) Γ (pr ‵, pr₁) = {!   !}
 
-fresh-lookup : ∀{n m}(Γ : Ctx n m) → Vec.lookup Γ <| fresh ≡ Γ
-fresh-lookup {zero} [] = refl
-fresh-lookup {suc n} (x ∷ Γ) rewrite fresh-lookup Γ = {! !} 
+fresh-lookup-id : ∀{n m}(Γ : Ctx n m) → Vec.lookup Γ <| fresh ≡ Γ
+fresh-lookup-id {zero} [] = refl
+fresh-lookup-id {suc n} (x ∷ Γ) with fresh-lookup-id Γ
+... | eq = cong (λ y → x ∷ y) (trans {!   !} eq)
+
+fresh-lookup-var : ∀{n}(x : Fin n) → Vec.lookup fresh x ≡ var x
+fresh-lookup-var {suc n} zero = refl
+fresh-lookup-var {suc n} (suc x) with fresh-lookup-var x 
+... | eq = {!   !}
 
 iExp-comp : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m)
   → (pr : Γ ⊢ e ∶ s) 
   → Σ[ m' ∈ ℕ ] Σ[ t ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ]
       inferE e ≡ just (m' , t , Δ) × (Σ[ σ ∈ (Fin m' → Type m) ] σ <| Δ ≡ Γ × σ <| t ≡ s)
 iExp-comp n m .top .‵⊤ Γ top  =
-  n , ‵⊤ , fresh , refl , (λ x → Vec.lookup Γ x) , {!  !} , refl
-iExp-comp n m (var x) s Γ (var pr) = n , Vec.lookup fresh x , fresh , refl , {!   !} , {!   !} , {!   !}
+  n , ‵⊤ , fresh , refl , Vec.lookup Γ , fresh-lookup-id Γ , refl
+iExp-comp n m (var x) .(Vec.lookup Γ x) Γ (var refl) = 
+  n , Vec.lookup fresh x , fresh , refl , Vec.lookup Γ , fresh-lookup-id Γ , 
+  subst (λ y → Vec.lookup Γ <| y ≡ Vec.lookup Γ x) (sym (fresh-lookup-var x)) refl
 iExp-comp n m .(fst _) s Γ (fst prΓ) = {!   !}
 iExp-comp n m .(snd _) s Γ (snd prΓ) = {!   !}
 iExp-comp n m .(inl _) .(_ ‵+ _) Γ (inl prΓ) = {!   !}
