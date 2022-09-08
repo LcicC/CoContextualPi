@@ -72,6 +72,7 @@ pattern !_ t = _ , t
 
 _==_ = unify-sound
 
+{-
 inferE : (e : Expr n) → Maybe (Σ[ m ∈ ℕ ] Type m × Ctx n m)
 inferE top      = return (! ‵⊤ , fresh)
 inferE (var x)  = return (! Vec.lookup fresh x , fresh)
@@ -91,5 +92,33 @@ inferE (e ‵, f) = do ! t , Γ₁ ← inferE e
                      ! s , Γ₂ ← inferE f
                      ! σ ← unify <[ Γ₁ ] [ Γ₂ ]>
                      return (! (σ <|[ t ]) ‵× ([ s ]|> σ) , σ <|[ Γ₁ ])
+-}
+
+inferE : (e : Expr n) → Maybe (Σ[ m ∈ ℕ ] Type m × Ctx n m)
+inferE top      = just (_ , ‵⊤ , fresh)
+inferE (var x)  = just (_ , Vec.lookup fresh x , fresh)
+inferE (fst e)  with inferE e
+... | nothing = nothing
+... | just (_ , t , Γ₁) with unify <[ t ] [ var zero ‵× var (suc (zero {zero})) ]>
+... | nothing = nothing
+... | just (_ , σ) = just (_ , [ var zero ]|> σ , σ <|[ Γ₁ ])
+inferE (snd e)  with inferE e
+... | nothing = nothing
+... | just (_ , t , Γ₁) with unify <[ t ] [ var zero ‵× var (suc (zero {zero})) ]>
+... | nothing = nothing
+... | just (_ , σ) = just (_ , [ var (suc zero) ]|> σ , σ <|[ Γ₁ ])
+inferE (inl e)  with inferE e
+... | nothing = nothing
+... | just (_ , t , Γ₁) = just (_ , <[ t ] ‵+ [ var (zero {zero}) ]> , <[ Γ₁ ])
+inferE (inr e)  with inferE e
+... | nothing = nothing
+... | just (_ , t , Γ₁) = just (_ , <[ var (zero {zero}) ] ‵+ [_]> {m = 1} t , [ Γ₁ ]>)
+inferE (e ‵, f) with inferE e
+... | nothing = nothing
+... | just (_ , t , Γ₁) with inferE f
+... | nothing = nothing
+... | just (_ , s , Γ₂) with unify <[ Γ₁ ] [ Γ₂ ]>
+... | nothing = nothing
+... | just (_ , σ) = just (_ , (σ <|[ t ]) ‵× ([ s ]|> σ) , σ <|[ Γ₁ ])
 
 {- TODO: inferP from inferP-sound -}

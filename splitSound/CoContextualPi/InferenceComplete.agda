@@ -11,6 +11,7 @@ open import Data.Fin as Fin using (Fin; zero; suc)
 open import Data.Vec as Vec using (Vec; []; _∷_; [_])
 
 import Data.Maybe.Categorical as maybeCat
+import Data.Maybe.Properties as Maybeₚ
 import Data.Nat.Properties as ℕₚ
 import Data.Fin.Properties as Finₚ
 import Data.Vec.Properties as Vecₚ
@@ -31,6 +32,10 @@ fresh-lookup-var {suc n} zero = refl
 fresh-lookup-var {suc n} (suc x) with fresh-lookup-var x 
 ... | eq = {!   !}
 
+maybe-just : ∀{a b} {A : Set a} {B : Maybe A → Set b}{x : A}{m : Maybe A} →
+        (j : (x : A) → B (just x)) → (n : B nothing) → m ≡ just x → Maybe.maybe {A = A} {B} j n (just x) ≡ j x 
+maybe-just j n refl = refl
+
 iExp-comp : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m)
   → (pr : Γ ⊢ e ∶ s) 
   → Σ[ m' ∈ ℕ ] Σ[ t ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ]
@@ -40,8 +45,9 @@ iExp-comp n m .top .‵⊤ Γ top  =
 iExp-comp n m (var x) .(Vec.lookup Γ x) Γ (var refl) = 
   n , Vec.lookup fresh x , fresh , refl , Vec.lookup Γ , fresh-lookup-id Γ , 
   subst (λ y → Vec.lookup Γ <| y ≡ Vec.lookup Γ x) (sym (fresh-lookup-var x)) refl
-iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ) with iExp-comp n m e (s ‵× t) Γ prΓ
-... | m' , t' , Δ , eqΔ , (σ , σΔ≡Γ , σt'≡s×t)
+iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ) = {!   !} , {!   !} , {!   !} , {!   !} , {!   !}
+{- with iExp-comp n m e (s ‵× t) Γ prΓ
+... | m' , t' , Δ , inferE≡just , (σ , σΔ≡Γ , σt'≡s×t)
       with unify-complete {m = m' ℕ.+ 2} {l = m} 
                 <[ t' ] [ var zero ‵× var (suc (zero {zero})) ]> 
                 (merge σ λ{zero → s ; (suc zero) → t}) 
@@ -49,8 +55,21 @@ iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ) with iExp-comp n m e (s �
                   (merge-eq-l σ _ t') 
                   (trans (trans σt'≡s×t refl) 
                     (sym (merge-eq-r σ _ (var zero ‵× var (suc (zero {zero})))))))
-... | n' , σ' , unify-eq , _ = n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , {!   !} , ({!   !} , {!   !} , {!   !})
+... | n' , σ' , unify≡just , _ = 
+      n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , 
+      {!  !} , 
+      {!   !} -}
+{-
+  let maybe-unify = 
+        λ(mm , tt , Ω) → Maybe.maybe {A = {!   !}} {{!   !}}
+                          (λ{(nn , δ) → nn , ([ var zero ]|> δ) , (δ <|[ Ω ])})
+                          nothing (unify <[ tt ] [ var zero ‵× var (suc (zero {zero})) ]>) in
+  let f = Maybe.maybe (λ{(mm , tt , Ω) → maybe-unify (mm , tt , Ω)}) nothing (inferE e) in 
+  n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , 
+  trans (maybe-just f nothing inferE≡just) (trans (maybe-just (maybe-unify (m' , t' , Δ)) nothing unify≡just) {!   !}) , 
+  ({!   !} , {!   !} , {!   !})
+  -}
 iExp-comp n m .(snd _) s Γ (snd prΓ) = {!   !}
 iExp-comp n m .(inl _) .(_ ‵+ _) Γ (inl prΓ) = {!   !}
 iExp-comp n m .(inr _) .(_ ‵+ _) Γ (inr prΓ) = {!   !}
-iExp-comp n m .(_ ‵, _) .(_ ‵× _) Γ (prΓ ‵, prΓ₁) = {!   !}
+iExp-comp n m .(_ ‵, _) .(_ ‵× _) Γ (prΓ ‵, prΓ₁) = {!   !} 
