@@ -45,8 +45,8 @@ iExp-comp n m .top .‵⊤ Γ top  =
 iExp-comp n m (var x) .(Vec.lookup Γ x) Γ (var refl) = 
   n , Vec.lookup fresh x , fresh , refl , Vec.lookup Γ , fresh-lookup-id Γ , 
   subst (λ y → Vec.lookup Γ <| y ≡ Vec.lookup Γ x) (sym (fresh-lookup-var x)) refl
-iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ) = {!   !} , {!   !} , {!   !} , {!   !} , {!   !}
-{- with iExp-comp n m e (s ‵× t) Γ prΓ
+iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ)  
+      with iExp-comp n m e (s ‵× t) Γ prΓ
 ... | m' , t' , Δ , inferE≡just , (σ , σΔ≡Γ , σt'≡s×t)
       with unify-complete {m = m' ℕ.+ 2} {l = m} 
                 <[ t' ] [ var zero ‵× var (suc (zero {zero})) ]> 
@@ -55,10 +55,10 @@ iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ) = {!   !} , {!   !} , {!  
                   (merge-eq-l σ _ t') 
                   (trans (trans σt'≡s×t refl) 
                     (sym (merge-eq-r σ _ (var zero ‵× var (suc (zero {zero})))))))
-... | n' , σ' , unify≡just , _ = 
+... | n' , σ' , unify≡just , (n'→m , ext-eq) =
       n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , 
       {!  !} , 
-      {!   !} -}
+      (n'→m , {!   !} , {!   !})
 {-
   let maybe-unify = 
         λ(mm , tt , Ω) → Maybe.maybe {A = {!   !}} {{!   !}}
@@ -72,4 +72,4 @@ iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ) = {!   !} , {!   !} , {!  
 iExp-comp n m .(snd _) s Γ (snd prΓ) = {!   !}
 iExp-comp n m .(inl _) .(_ ‵+ _) Γ (inl prΓ) = {!   !}
 iExp-comp n m .(inr _) .(_ ‵+ _) Γ (inr prΓ) = {!   !}
-iExp-comp n m .(_ ‵, _) .(_ ‵× _) Γ (prΓ ‵, prΓ₁) = {!   !} 
+iExp-comp n m .(_ ‵, _) .(_ ‵× _) Γ (prΓ ‵, prΓ₁) = {!   !}  
