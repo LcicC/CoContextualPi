@@ -32,22 +32,25 @@ fresh-lookup-var {suc n} zero = refl
 fresh-lookup-var {suc n} (suc x) with fresh-lookup-var x 
 ... | eq = {!   !}
 
-maybe-just : ∀{a b} {A : Set a} {B : Maybe A → Set b}{x : A}{m : Maybe A} →
-        (j : (x : A) → B (just x)) → (n : B nothing) → m ≡ just x → Maybe.maybe {A = A} {B} j n (just x) ≡ j x 
-maybe-just j n refl = refl
+{-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Completeness of Inference for Expressions %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-}
 
 iExp-comp : ∀(n m : ℕ)(e : Expr n)(s : Type m)(Γ : Ctx n m)
   → (pr : Γ ⊢ e ∶ s) 
   → Σ[ m' ∈ ℕ ] Σ[ t ∈ Type m' ] Σ[ Δ ∈ Ctx n m' ]
       inferE e ≡ just (m' , t , Δ) × (Σ[ σ ∈ (Fin m' → Type m) ] σ <| Δ ≡ Γ × σ <| t ≡ s)
 iExp-comp n m .top .‵⊤ Γ top  =
-  n , ‵⊤ , fresh , refl , Vec.lookup Γ , fresh-lookup-id Γ , refl
+  n , ‵⊤ , fresh , refl , (Vec.lookup Γ , fresh-lookup-id Γ , refl)
 iExp-comp n m (var x) .(Vec.lookup Γ x) Γ (var refl) = 
-  n , Vec.lookup fresh x , fresh , refl , Vec.lookup Γ , fresh-lookup-id Γ , 
-  subst (λ y → Vec.lookup Γ <| y ≡ Vec.lookup Γ x) (sym (fresh-lookup-var x)) refl
+  n , Vec.lookup fresh x , fresh , refl , 
+    (Vec.lookup Γ , fresh-lookup-id Γ , 
+    subst (λ y → Vec.lookup Γ <| y ≡ Vec.lookup Γ x) (sym (fresh-lookup-var x)) refl)
 iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ)  
       with iExp-comp n m e (s ‵× t) Γ prΓ
-... | m' , t' , Δ , inferE≡just , (σ , σΔ≡Γ , σt'≡s×t)
+... | m' , t' , Δ , inferE≡just , (σ , σΔ≡Γ , σt'≡s×t) rewrite inferE≡just
       with unify-complete {m = m' ℕ.+ 2} {l = m} 
                 <[ t' ] [ var zero ‵× var (suc (zero {zero})) ]> 
                 (merge σ λ{zero → s ; (suc zero) → t}) 
@@ -55,27 +58,24 @@ iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ)
                   (merge-eq-l σ _ t') 
                   (trans (trans σt'≡s×t refl) 
                     (sym (merge-eq-r σ _ (var zero ‵× var (suc (zero {zero})))))))
-... | n' , σ' , unify≡just , (n'→m , ext-eq) =
+... | n' , σ' , unify≡just , (n'→m , ext-eq) rewrite unify≡just =
         let aux = (<|-≗ {n = m' ℕ.+ 2} {m} {f = merge σ _} {n'→m <> sub σ'} ext-eq) <[ Δ ] in
         n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , 
-        {!   !} , 
+        refl , 
         (n'→m , -- Substitution Fin n' → Type m
           trans (trans -- n'→m <| (σ' <|[ Δ ] ≡ Γ)
                   (<|-assoc n'→m (sub σ') <[ Δ ]) 
-                  (trans (sym aux) (merge-eq-l σ _ Δ))) σΔ≡Γ ,
+                  (trans (sym aux) (merge-eq-l σ _ Δ))
+                ) σΔ≡Γ ,
           trans (sym (ext-eq _)) (merge-eq-r σ _ (var zero))) -- n'→m <| ([var zero]|> σ') ≡ s
-
-{-
-  let maybe-unify = 
-        λ(mm , tt , Ω) → Maybe.maybe {A = {!   !}} {{!   !}}
-                          (λ{(nn , δ) → nn , ([ var zero ]|> δ) , (δ <|[ Ω ])})
-                          nothing (unify <[ tt ] [ var zero ‵× var (suc (zero {zero})) ]>) in
-  let f = Maybe.maybe (λ{(mm , tt , Ω) → maybe-unify (mm , tt , Ω)}) nothing (inferE e) in 
-  n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , 
-  trans (maybe-just f nothing inferE≡just) (trans (maybe-just (maybe-unify (m' , t' , Δ)) nothing unify≡just) {!   !}) , 
-  ({!   !} , {!   !} , {!   !})
--}
 iExp-comp n m .(snd _) s Γ (snd prΓ) = {!   !}
 iExp-comp n m .(inl _) .(_ ‵+ _) Γ (inl prΓ) = {!   !}
 iExp-comp n m .(inr _) .(_ ‵+ _) Γ (inr prΓ) = {!   !}
 iExp-comp n m .(_ ‵, _) .(_ ‵× _) Γ (prΓ ‵, prΓ₁) = {!   !}  
+
+{-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Completeness of Inference for Processes %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-}
+
