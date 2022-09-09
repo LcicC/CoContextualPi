@@ -34,6 +34,41 @@ private
   instance maybeMonad = maybeCat.monad
   instance maybeApplicative = maybeCat.applicative
 
+_==_ = unify-sound
+
+<|-lookup : (σ : Fin m → Type l) (xs : Vec (Type m) n) {i : Fin n}
+          → Vec.lookup (σ <| xs) i ≡ σ <| (Vec.lookup xs i)
+<|-lookup σ (x ∷ xs) {zero} = refl
+<|-lookup σ (x ∷ xs) {suc i} = <|-lookup σ xs
+
+<|-∋ : (σ : Fin m → Type l) (xs : Vec (Type m) n) {x : Fin n} {t : Type m}
+     → xs ∋ x ∶ t → (σ <| xs) ∋ x ∶ (σ <| t)
+<|-∋ σ xs refl = <|-lookup σ xs
+
+<|-⊢-∶ : (σ : Fin m → Type l) {xs : Vec (Type m) n} {e : Expr n} {t : Type m}
+       → xs ⊢ e ∶ t → (σ <| xs) ⊢ e ∶ (σ <| t)
+<|-⊢-∶ σ top = top
+<|-⊢-∶ σ {xs} (var x) = var (<|-∋ σ xs x)
+<|-⊢-∶ σ (fst ⊢e) = fst (<|-⊢-∶ σ ⊢e)
+<|-⊢-∶ σ (snd ⊢e) = snd (<|-⊢-∶ σ ⊢e)
+<|-⊢-∶ σ (inl ⊢e) = inl (<|-⊢-∶ σ ⊢e)
+<|-⊢-∶ σ (inr ⊢e) = inr (<|-⊢-∶ σ ⊢e)
+<|-⊢-∶ σ (⊢e ‵, ⊢f) = (<|-⊢-∶ σ ⊢e) ‵, (<|-⊢-∶ σ ⊢f)
+
+<|-⊢ : (σ : Fin m → Type l) {xs : Vec (Type m) n} {P : Proc n} → xs ⊢ P → (σ <| xs) ⊢ P
+<|-⊢ σ end = end
+<|-⊢ σ (new t ⊢P) = new _ (<|-⊢ σ ⊢P)
+<|-⊢ σ (comp ⊢P ⊢Q) = comp (<|-⊢ σ ⊢P) (<|-⊢ σ ⊢Q)
+<|-⊢ σ (recv e ⊢P) = recv (<|-⊢-∶ σ e) (<|-⊢ σ ⊢P)
+<|-⊢ σ (send e f ⊢P) = send (<|-⊢-∶ σ e) (<|-⊢-∶ σ f) (<|-⊢ σ ⊢P)
+<|-⊢ σ (case e ⊢P ⊢Q) = case (<|-⊢-∶ σ e) (<|-⊢ σ ⊢P) (<|-⊢ σ ⊢Q)
+
+{-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sound by design Inference %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-}
+
 inferE-sound : (e : Expr n) → Maybe (Σ[ m ∈ ℕ ] Σ[ t ∈ Type m ] Σ[ Γ ∈ Ctx n m ] Γ ⊢ e ∶ t)
 inferE-sound top      = return (! ‵⊤ , fresh , top)
 inferE-sound (var x)  = return (! Vec.lookup fresh x , fresh , var refl)

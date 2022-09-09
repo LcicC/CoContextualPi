@@ -38,39 +38,20 @@ fresh : Ctx n n
 fresh {n = zero} = []
 fresh {n = suc n} = var zero ∷ Vec.map ((|> suc) <|_) fresh
 
+{- Properties of fresh -}
+
+postulate
+  fresh-lookup-id : ∀{n m}(Γ : Ctx n m) → Vec.lookup Γ <| fresh ≡ Γ
+  fresh-lookup-var : ∀{n}(x : Fin n) → Vec.lookup fresh x ≡ var x
+
 infixr 2 !_
 pattern !_ t = _ , t
 
-
-<|-lookup : (σ : Fin m → Type l) (xs : Vec (Type m) n) {i : Fin n}
-          → Vec.lookup (σ <| xs) i ≡ σ <| (Vec.lookup xs i)
-<|-lookup σ (x ∷ xs) {zero} = refl
-<|-lookup σ (x ∷ xs) {suc i} = <|-lookup σ xs
-
-<|-∋ : (σ : Fin m → Type l) (xs : Vec (Type m) n) {x : Fin n} {t : Type m}
-     → xs ∋ x ∶ t → (σ <| xs) ∋ x ∶ (σ <| t)
-<|-∋ σ xs refl = <|-lookup σ xs
-
-<|-⊢-∶ : (σ : Fin m → Type l) {xs : Vec (Type m) n} {e : Expr n} {t : Type m}
-       → xs ⊢ e ∶ t → (σ <| xs) ⊢ e ∶ (σ <| t)
-<|-⊢-∶ σ top = top
-<|-⊢-∶ σ {xs} (var x) = var (<|-∋ σ xs x)
-<|-⊢-∶ σ (fst ⊢e) = fst (<|-⊢-∶ σ ⊢e)
-<|-⊢-∶ σ (snd ⊢e) = snd (<|-⊢-∶ σ ⊢e)
-<|-⊢-∶ σ (inl ⊢e) = inl (<|-⊢-∶ σ ⊢e)
-<|-⊢-∶ σ (inr ⊢e) = inr (<|-⊢-∶ σ ⊢e)
-<|-⊢-∶ σ (⊢e ‵, ⊢f) = (<|-⊢-∶ σ ⊢e) ‵, (<|-⊢-∶ σ ⊢f)
-
-<|-⊢ : (σ : Fin m → Type l) {xs : Vec (Type m) n} {P : Proc n} → xs ⊢ P → (σ <| xs) ⊢ P
-<|-⊢ σ end = end
-<|-⊢ σ (new t ⊢P) = new _ (<|-⊢ σ ⊢P)
-<|-⊢ σ (comp ⊢P ⊢Q) = comp (<|-⊢ σ ⊢P) (<|-⊢ σ ⊢Q)
-<|-⊢ σ (recv e ⊢P) = recv (<|-⊢-∶ σ e) (<|-⊢ σ ⊢P)
-<|-⊢ σ (send e f ⊢P) = send (<|-⊢-∶ σ e) (<|-⊢-∶ σ f) (<|-⊢ σ ⊢P)
-<|-⊢ σ (case e ⊢P ⊢Q) = case (<|-⊢-∶ σ e) (<|-⊢ σ ⊢P) (<|-⊢ σ ⊢Q)
-
-
-_==_ = unify-sound
+{-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inference for Expressions %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-}
 
 inferE : (e : Expr n) → Maybe (Σ[ m ∈ ℕ ] Type m × Ctx n m)
 inferE top      = return (! ‵⊤ , fresh)
@@ -122,48 +103,33 @@ inferE (e ‵, f) with inferE e
 ... | just (_ , σ) = just (_ , (σ <|[ t ]) ‵× ([ s ]|> σ) , σ <|[ Γ₁ ])
 -}
 
-
-inferP : (p : Proc n) → Maybe (Σ[ m ∈ ℕ ] Σ[ Γ ∈ Ctx n m ] Γ ⊢ p)
-inferP end          = return (! fresh , end)
-inferP (new p)      = do ! t ∷ Γ , ⊢p ← inferP p
-                         return (! Γ , new t ⊢p)
-inferP (comp p q)   = do ! Γ₁ , ⊢p ← inferP p
-                         ! Γ₂ , ⊢q ← inferP q
-                         ! σ , sound ← <[ Γ₁ ] == [ Γ₂ ]>
-                         let ⊢p' = <|-⊢ (sub σ) (<|-⊢ (|> <<) ⊢p)
-                         let ⊢q' = <|-⊢ (sub σ) (<|-⊢ (|> >>) ⊢q)
-                         return (! σ <|[ Γ₁ ] , comp ⊢p' (subst (_⊢ _) (sym sound) ⊢q'))
-                         {-
-inferP (recv e p)   = do ! c , Γ₁ , ⊢e ← inferE-sound e
-                         ! v ∷ Γ₂ , ⊢p ← inferP p
-                         ! σ , sound ← <[ c ∷ Γ₁ ] == [ # v ∷ Γ₂ ]>
-                         let c#v-sound , Γ₁Γ₂-sound = Vecₚ.∷-injective sound
-                         let ⊢e' = <|-⊢-∶ (sub σ) (<|-⊢-∶ (|> <<) ⊢e)
-                         let ⊢p' = <|-⊢ (sub σ) (<|-⊢ (|> >>) ⊢p)
-                         return (! σ <|[ Γ₁ ] , recv (subst (_ ⊢ _ ∶_) (c#v-sound) ⊢e')
-                                (subst (λ ● → (_ ∷ ●) ⊢ _) (sym Γ₁Γ₂-sound) ⊢p'))
-inferP (send e f p) = do ! c , Γ₁ , ⊢e ← inferE-sound e
-                         ! v , Γ₂ , ⊢f ← inferE-sound f
-                         ! Γ₃ , ⊢p ← inferP p
-                         ! σ₁ , sound ← <[ c ∷ Γ₁ ] == [ # v ∷ Γ₂ ]>
-                         ! σ₂ , Γ₁Γ₃-sound ← <[ σ₁ <|[ Γ₁ ] ] == [ Γ₃ ]>
-                         let c#v-sound , Γ₁Γ₂-sound = Vecₚ.∷-injective sound
-                         let ⊢e' = <|-⊢-∶ (sub σ₂) (<|-⊢-∶ (|> <<) (<|-⊢-∶ (sub σ₁) (<|-⊢-∶ (|> <<) ⊢e)))
-                         let ⊢f' = <|-⊢-∶ (sub σ₂) (<|-⊢-∶ (|> <<) (<|-⊢-∶ (sub σ₁) (<|-⊢-∶ (|> >>) ⊢f)))
-                         let ⊢p' = <|-⊢ (sub σ₂) (<|-⊢ (|> >>) ⊢p)
-                         return (! [ Γ₃ ]|> σ₂ , send (subst₂ (_⊢ _ ∶_) Γ₁Γ₃-sound (cong (sub σ₂ <|_ ∘ |> << <|_) c#v-sound) ⊢e')
-                                  (subst (_⊢ _ ∶ _) (trans (cong (sub σ₂ <|_ ∘ |> << <|_) (sym Γ₁Γ₂-sound)) Γ₁Γ₃-sound) ⊢f')
-                                           ⊢p')
-inferP (case e p q) = do ! v , Γ₁ , ⊢e ← inferE-sound e
-                         ! l ∷ Γ₂ , ⊢p ← inferP p
-                         ! r ∷ Γ₃ , ⊢q ← inferP q
-                         ! σ₁ , Γ₂Γ₃-sound ← <[ Γ₂ ] == [ Γ₃ ]>
-                         ! σ₂ , sound ← <[ v ∷ Γ₁ ] == [ (σ₁ <|[ l ]) ‵+ ([ r ]|> σ₁) ∷ σ₁ <|[ Γ₂ ] ]>
-                         let lrv-sound , Γ₁Γ₂-sound = Vecₚ.∷-injective sound
-                         let ⊢e' = <|-⊢-∶ (sub σ₂) (<|-⊢-∶ (|> <<) ⊢e)
-                         let ⊢p' = <|-⊢ (sub σ₂) (<|-⊢ (|> >>) (<|-⊢ (sub σ₁) (<|-⊢ (|> <<) ⊢p)))
-                         let ⊢q' = <|-⊢ (sub σ₂) (<|-⊢ (|> >>) (<|-⊢ (sub σ₁) (<|-⊢ (|> >>) ⊢q)))
-                         return (! σ₂ <|[ Γ₁ ] , case (subst (_ ⊢ _ ∶_) lrv-sound ⊢e')
-                                  (subst (λ ● → (_ ∷ ●) ⊢ _) (sym Γ₁Γ₂-sound) ⊢p')
-                                    (subst (λ ● → (_ ∷ ●) ⊢ _) (sym (trans Γ₁Γ₂-sound (cong (sub σ₂ <|_ ∘ |> >> <|_) Γ₂Γ₃-sound))) ⊢q'))
+{-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inference for Processes %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -}
+
+inferP : (p : Proc n) → Maybe (Σ[ m ∈ ℕ ] Ctx n m)
+inferP end          = return (! fresh)
+inferP (new p)      = do ! t ∷ Γ ← inferP p
+                         return (! Γ)
+inferP (comp p q)   = do ! Γ₁ ← inferP p
+                         ! Γ₂ ← inferP q
+                         ! σ ← unify <[ Γ₁ ] [ Γ₂ ]>
+                         return (! σ <|[ Γ₁ ])
+inferP (recv e p)   = do ! c , Γ₁ ← inferE e
+                         ! v ∷ Γ₂ ← inferP p
+                         ! σ ← unify <[ c ∷ Γ₁ ] [ # v ∷ Γ₂ ]>
+                         return (! σ <|[ Γ₁ ])
+inferP (send e f p) = do ! c , Γ₁ ← inferE e
+                         ! v , Γ₂ ← inferE f
+                         ! Γ₃ ← inferP p
+                         ! σ₁ ← unify <[ c ∷ Γ₁ ] [ # v ∷ Γ₂ ]>
+                         ! σ₂ ← unify <[ σ₁ <|[ Γ₁ ] ] [ Γ₃ ]>
+                         return (! [ Γ₃ ]|> σ₂)
+inferP (case e p q) = do ! v , Γ₁ ← inferE e
+                         ! l ∷ Γ₂ ← inferP p
+                         ! r ∷ Γ₃ ← inferP q
+                         ! σ₁ ← unify <[ Γ₂ ] [ Γ₃ ]>
+                         ! σ₂ ← unify <[ v ∷ Γ₁ ] [ (σ₁ <|[ l ]) ‵+ ([ r ]|> σ₁) ∷ σ₁ <|[ Γ₂ ] ]>
+                         return (! σ₂ <|[ Γ₁ ])

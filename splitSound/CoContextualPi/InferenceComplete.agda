@@ -22,16 +22,6 @@ open import CoContextualPi.Inference
 
 module CoContextualPi.InferenceComplete where
 
-fresh-lookup-id : ∀{n m}(Γ : Ctx n m) → Vec.lookup Γ <| fresh ≡ Γ
-fresh-lookup-id {zero} [] = refl
-fresh-lookup-id {suc n} (x ∷ Γ) with fresh-lookup-id Γ
-... | eq = cong (λ y → x ∷ y) (trans {!   !} eq)
-
-fresh-lookup-var : ∀{n}(x : Fin n) → Vec.lookup fresh x ≡ var x
-fresh-lookup-var {suc n} zero = refl
-fresh-lookup-var {suc n} (suc x) with fresh-lookup-var x 
-... | eq = {!   !}
-
 {-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Completeness of Inference for Expressions %%%
@@ -60,6 +50,7 @@ iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ)
                     (sym (merge-eq-r σ _ (var zero ‵× var (suc (zero {zero})))))))
 ... | n' , σ' , unify≡just , (n'→m , ext-eq) rewrite unify≡just =
         let aux = (<|-≗ {n = m' ℕ.+ 2} {m} {f = merge σ _} {n'→m <> sub σ'} ext-eq) <[ Δ ] in
+        -- aux = merge σ _ <| <[ Δ ] ≡ (n'→m <> sub σ') <| <[ Δ ]
         n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , 
         refl , 
         (n'→m , -- Substitution Fin n' → Type m
