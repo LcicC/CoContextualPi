@@ -156,8 +156,8 @@ con-args-eq xs .xs refl = refl
 {- merge properties -}
 
 postulate
-  merge-eq-l : (f : Fin n → Term l)(g : Fin m → Term l)(t : Term n) → (merge f g) <| <[ t ] ≡ f <| t
-  merge-eq-r : (f : Fin n → Term l)(g : Fin m → Term l)(t : Term m) → (merge f g) <| [ t ]> ≡ g <| t
+  merge-eq-l : (f : Fin n → Term l)(g : Fin m → Term l)(t : UTerm u n) → (merge f g) <| <[ t ] ≡ f <| t
+  merge-eq-r : (f : Fin n → Term l)(g : Fin m → Term l)(t : UTerm u m) → (merge f g) <| [ t ]> ≡ g <| t
 
 {- ##### If I have a unifier ⇒ check must not fail ##### -}
 {- Thanks @Francesco Dagnino (https://fdgn.github.io) for the contribution -}

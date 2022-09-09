@@ -51,16 +51,20 @@ iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ)
       with unify-complete {m = m' ℕ.+ 2} {l = m} 
                 <[ t' ] [ var zero ‵× var (suc (zero {zero})) ]> 
                 (merge σ λ{zero → s ; (suc zero) → t}) 
-                (trans 
+                (trans -- proof that unifies <[ t' ] [ var zero ‵× var (suc (zero {zero})) ]> 
                   (merge-eq-l σ _ t') 
                   (trans (trans σt'≡s×t refl) 
                     (sym (merge-eq-r σ _ (var zero ‵× var (suc (zero {zero})))))))
 ... | n' , σ' , unify≡just , (n'→m , ext-eq) =
-      n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , 
-      {!  !} , 
-      (n'→m , 
-        trans {!   !} {!   !} , 
-        trans (sym (ext-eq _)) (merge-eq-r σ _ (var zero)))
+        let aux = (<|-≗ {n = m' ℕ.+ 2} {m} {f = merge σ _} {n'→m <> sub σ'} ext-eq) <[ Δ ] in
+        n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , 
+        {!   !} , 
+        (n'→m , -- Substitution Fin n' → Type m
+          trans (trans -- n'→m <| (σ' <|[ Δ ] ≡ Γ)
+                  (<|-assoc n'→m (sub σ') <[ Δ ]) 
+                  (trans (sym aux) (merge-eq-l σ _ Δ))) σΔ≡Γ ,
+          trans (sym (ext-eq _)) (merge-eq-r σ _ (var zero))) -- n'→m <| ([var zero]|> σ') ≡ s
+
 {-
   let maybe-unify = 
         λ(mm , tt , Ω) → Maybe.maybe {A = {!   !}} {{!   !}}
@@ -70,7 +74,7 @@ iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ)
   n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , 
   trans (maybe-just f nothing inferE≡just) (trans (maybe-just (maybe-unify (m' , t' , Δ)) nothing unify≡just) {!   !}) , 
   ({!   !} , {!   !} , {!   !})
-  -}
+-}
 iExp-comp n m .(snd _) s Γ (snd prΓ) = {!   !}
 iExp-comp n m .(inl _) .(_ ‵+ _) Γ (inl prΓ) = {!   !}
 iExp-comp n m .(inr _) .(_ ‵+ _) Γ (inr prΓ) = {!   !}
