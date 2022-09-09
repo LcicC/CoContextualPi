@@ -58,7 +58,9 @@ iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ)
 ... | n' , σ' , unify≡just , (n'→m , ext-eq) =
       n' , ([ var zero ]|> σ') , (σ' <|[ Δ ]) , 
       {!  !} , 
-      (n'→m , {!   !} , {!   !})
+      (n'→m , 
+        trans {!   !} {!   !} , 
+        trans (sym (ext-eq _)) (merge-eq-r σ _ (var zero)))
 {-
   let maybe-unify = 
         λ(mm , tt , Ω) → Maybe.maybe {A = {!   !}} {{!   !}}
