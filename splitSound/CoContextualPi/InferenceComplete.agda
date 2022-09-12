@@ -59,7 +59,26 @@ iExp-comp n m (fst e) s Γ (fst {t = s} {s = t} prΓ)
                   (trans (sym aux) (merge-eq-l σ _ Δ))
                 ) σΔ≡Γ ,
           trans (sym (ext-eq _)) (merge-eq-r σ _ (var zero))) -- n'→m <| ([var zero]|> σ') ≡ s
-iExp-comp n m .(snd _) s Γ (snd prΓ) = {!   !}
+iExp-comp n m (snd e) t Γ (snd {t = s} {s = t} prΓ)
+      with iExp-comp n m e (s ‵× t) Γ prΓ
+... | m' , t' , Δ , inferE≡just , (σ , σΔ≡Γ , σt'≡s×t) rewrite inferE≡just
+      with unify-complete {m = m' ℕ.+ 2} {l = m} 
+                <[ t' ] [ var zero ‵× var (suc (zero {zero})) ]> 
+                (merge σ λ{zero → s ; (suc zero) → t}) 
+                (trans -- proof that unifies <[ t' ] [ var zero ‵× var (suc (zero {zero})) ]> 
+                  (merge-eq-l σ _ t') 
+                  (trans (trans σt'≡s×t refl) 
+                    (sym (merge-eq-r σ _ (var zero ‵× var (suc (zero {zero})))))))
+... | n' , σ' , unify≡just , (n'→m , ext-eq) rewrite unify≡just =
+        let aux = (<|-≗ {n = m' ℕ.+ 2} {m} {f = merge σ _} {n'→m <> sub σ'} ext-eq) <[ Δ ] in
+        n' , ([ var (suc zero) ]|> σ') , (σ' <|[ Δ ]) , 
+        refl , 
+        (n'→m ,
+          trans (trans
+                  (<|-assoc n'→m (sub σ') <[ Δ ]) 
+                  (trans (sym aux) (merge-eq-l σ _ Δ))
+                ) σΔ≡Γ ,
+          trans (sym (ext-eq _)) (merge-eq-r σ _ (var (suc zero))))
 iExp-comp n m .(inl _) .(_ ‵+ _) Γ (inl prΓ) = {!   !}
 iExp-comp n m .(inr _) .(_ ‵+ _) Γ (inr prΓ) = {!   !}
 iExp-comp n m .(_ ‵, _) .(_ ‵× _) Γ (prΓ ‵, prΓ₁) = {!   !}  
