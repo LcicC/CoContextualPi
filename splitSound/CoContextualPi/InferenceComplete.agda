@@ -70,3 +70,13 @@ iExp-comp n m .(_ ‵, _) .(_ ‵× _) Γ (prΓ ‵, prΓ₁) = {!   !}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -}
 
+iProc-comp : ∀(n m : ℕ)(p : Proc n)(Γ : Ctx n m)
+  → (pr : Γ ⊢ p) 
+  → Σ[ m' ∈ ℕ ] Σ[ Δ ∈ Ctx n m' ]
+      inferP p ≡ just (m' , Δ) × (Σ[ σ ∈ (Fin m' → Type m) ] σ <| Δ ≡ Γ)
+iProc-comp n m .end Γ end = _ , fresh , refl , (Vec.lookup Γ , fresh-lookup-id Γ)
+iProc-comp n m .(new _) Γ (new t prΓ) = {!   !}
+iProc-comp n m .(comp _ _) Γ (comp prΓ prΓ₁) = {!   !}
+iProc-comp n m .(recv _ _) Γ (recv x prΓ) = {!   !}
+iProc-comp n m .(send _ _ _) Γ (send x x₁ prΓ) = {!   !}
+iProc-comp n m .(case _ _ _) Γ (case x prΓ prΓ₁) = {!   !}
