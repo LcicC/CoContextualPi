@@ -270,8 +270,7 @@ module _ where
     usage-==-var-+ : {x : γ ∋= multiplicity} {s t : γ ⊢= multiplicity} → Value [ s == var x + t ]
     usage-==-+-var : {x : γ ∋= multiplicity} {s t : γ ⊢= multiplicity} → Value [ s == t + var x ]
 
-  solve : (as : List (Constr γ)) → All Normalised as → 
-    Dec (Σ[ δ ∈ KindCtx ] Σ[ sol ∈ Subst _ δ ] (∀ {ξ} (σ : FreeSubst _ ξ) → ⟦ (σ <> sub sol) <|ᶜ as ⟧))
+  solve : (as : List (Constr γ)) → All Normalised as → Dec (Σ[ δ ∈ KindCtx ] Σ[ sol ∈ Subst _ δ ] (∀ {ξ} (σ : FreeSubst _ ξ) → ⟦ (σ <> sub sol) <|ᶜ as ⟧))
   solve .[] [] = yes (_ , [] , λ σ → [] )
   solve .([ var _ == _ ] ∷ _) (var-== ∷ nas) = {!!}
   solve .([ _ == var _ ] ∷ _) (==-var ∷ nas) = {!!}

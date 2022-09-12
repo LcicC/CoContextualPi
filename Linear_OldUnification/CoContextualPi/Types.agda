@@ -104,7 +104,7 @@ data _≔_+_ {γ} : ∀ {k} → γ ⊢= k → γ ⊢= k → γ ⊢= k → Set wh
   -- NOTE: x ≔ y + z is not necessarily unique
   left   : x  ≔ x  + 0∙
   right  : x  ≔ 0∙ + x
-  shared : ω∙ ≔ x  + y --0 + 0?
+  shared : ω∙ ≔ x  + y
   top    : ‵⊤ ≔ ‵⊤ + ‵⊤
   chan   : iz ≔ ix + iy → oz ≔ ox + oy → tz ≔ tx → tx ≔ ty
          → # iz oz tz ≔ # ix ox tx + # iy oy ty
