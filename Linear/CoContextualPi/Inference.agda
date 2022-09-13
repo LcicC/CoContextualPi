@@ -28,6 +28,7 @@ import Data.List.Relation.Unary.All.Properties as Allₚ
 open import CoContextualPi.Types
 open Unification using (|>; _<|_; var; con; zero; suc; !_)
 open import CoContextualPi.TypeSystem
+open import CoContextualPi.Constr
 
 module CoContextualPi.Inference where
 
@@ -50,50 +51,49 @@ private
   instance maybeMonad = maybeCat.monad
   instance maybeApplicative = maybeCat.applicative
 
--- In library?
-<< : γ ∋= k → (γ List.++ δ) ∋= k
-<< (! zero) = !zero
-<< (! suc i) = !suc (<< (! i))
-
->> : γ ∋= k → (δ List.++ γ) ∋= k
->> {δ = []} i = i
->> {δ = _ ∷ _} i = !suc (>> i)
-------------------
-
-fresh : Σ[ γ ∈ KindCtx ] Ctx n γ
-fresh {zero} = [] , []
-fresh {suc n} = Product.map (type ∷_) (λ Γ → (var !zero) ∷ (|> !suc <|ᵛ Γ)) fresh
-
 {-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Inference for Expressions %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -}
 
-inferE : (e : Expr n) → Σ[ γ ∈ KindCtx ] Ctx n γ × Type γ
-inferE {n = n} top =
-  let γ , Γ = fresh in _ , Γ , ‵⊤
-inferE {n = suc _} (var i) =
-  let γ , Γ = fresh in _ , Γ , Vec.lookup Γ i
-inferE (fst e) =
-  let γ , Γ , t = inferE e in
+inferE : ∀ {δ} (e : Expr n) → Σ[ γ ∈ KindCtx ] Ctx n γ × Type γ × List (Constr γ)
+inferE {n = n} {δ} top =
+  let γ , Γ = fresh in
+  let cs , _ = un-constr {n = n} {γ} {δ} Γ in
+   _ , Γ , ‵⊤ , cs
+inferE {n = suc n} {δ} (var i) =
+  let γ , Γ = fresh in
+  let cs , _ = un-var {n = suc n} {γ} {δ} i Γ in
+   _ , Γ , Vec.lookup Γ i , cs
+inferE {δ = δ} (fst e) =
+  let γ , Γ , t , cs = inferE {δ = δ} e in
+  let +-un-s , _ = un-constr¹ {δ = δ} (var (! (suc zero))) in
   let +2 = λ {k} → |> {k = k} (!suc ∘ !suc) in
-  type ∷ type ∷ γ , +2 <|ᵛ Γ , var (! zero)
-inferE (snd e) =
-  let γ , Γ , t = inferE e in
+  type ∷ type ∷ γ , +2 <|ᵛ Γ , var (! zero) , 
+  [ +2 <| t == var (! zero) ‵× var (! suc zero) ] ∷ +-un-s ∷ (+2 <|ᶜ cs)
+inferE {δ = δ} (snd e) =
+  let γ , Γ , t , cs = inferE {δ = δ} e in
+  let +-un-s , _ = un-constr¹ {δ = δ} (var (! (suc zero))) in
   let +2 = λ {k} → |> {k = k} (!suc ∘ !suc) in
-  type ∷ type ∷ γ , +2 <|ᵛ Γ , var (! zero)
-inferE (inl e) =
-  let γ , Γ , t = inferE e in
-  type ∷ γ , |> !suc <|ᵛ Γ , ((|> !suc <| t) ‵+ var !zero)
-inferE (inr e) =
-  let γ , Γ , t = inferE e in
-  type ∷ γ , |> !suc <|ᵛ Γ , (var !zero ‵+ (|> !suc <| t))
-inferE (l ‵, r) =
-  let lγ , lΓ , lt = inferE l in
-  let rγ , rΓ , rt = inferE r in
+  type ∷ type ∷ γ , +2 <|ᵛ Γ , var (! zero) , 
+  [ +2 <| t == var (! (suc zero)) ‵× var (! zero) ] ∷ +-un-s ∷ (+2 <|ᶜ cs)
+inferE {δ = δ} (inl e) =
+  let γ , Γ , t , cs = inferE {δ = δ} e in
+  type ∷ γ , |> !suc <|ᵛ Γ , ((|> !suc <| t) ‵+ var !zero) , (|> !suc <|ᶜ cs)
+inferE {δ = δ} (inr e) =
+  let γ , Γ , t , cs = inferE {δ = δ} e in
+  type ∷ γ , |> !suc <|ᵛ Γ , (var !zero ‵+ (|> !suc <| t)) , (|> !suc <|ᶜ cs)
+inferE {δ = δ} (l ‵, r) =
+  let lγ , lΓ , lt , lcs = inferE {δ = δ} l in
+  let rγ , rΓ , rt , rcs = inferE {δ = δ} r in
   let mγ , mΓ = fresh in
-  mγ List.++ lγ List.++ rγ , |> << <|ᵛ mΓ , |> (>> {δ = mγ}) <| ((|> << <| lt) ‵× (|> >> <| rt))
+  let congr = map-==-+ mΓ lΓ rΓ in
+  let left = (|> (>> {δ = mγ}) ∘ <<) <|ᶜ lcs in
+  let right = (|> (>> {δ = mγ}) ∘ >>) <|ᶜ rcs in
+  mγ List.++ lγ List.++ rγ , |> << <|ᵛ mΓ , 
+  |> (>> {δ = mγ}) <| ((|> << <| lt) ‵× (|> >> <| rt)) , 
+  congr List.++ (left List.++ right)
 
 {-
 constrProc : (p : Proc n) → Σ[ γ ∈ KindCtx ] Σ[ Γ ∈ Ctx n γ ] ∀⟦ σ ∶ γ ↦ δ ⟧ ((σ <|ᵛ Γ) ⊢ p)
