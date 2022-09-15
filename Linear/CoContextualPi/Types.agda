@@ -88,8 +88,6 @@ private
     x y iz ix iy oz ox oy : Usage γ
     a b c t tx ty tz lz lx ly rz rx ry : Type γ
 
-
-
 data _≔_ {γ} : ∀ {k} → γ ⊢= k → γ ⊢= k → Set where
   usage  : {x : Usage γ} → x ≔ x
   top    : ‵⊤ ≔ ‵⊤
@@ -112,6 +110,12 @@ data _≔_+_ {γ} : ∀ {k} → γ ⊢= k → γ ⊢= k → γ ⊢= k → Set wh
          → (lz ‵× rz) ≔ (lx ‵× rx) + (ly ‵× ry)
   sum    : lz ≔ lx + ly → rz ≔ rx + ry
          → (lz ‵+ rz) ≔ (lx ‵+ rx) + (ly ‵+ ry)
+
+open import Data.Maybe 
+
+_+++_ : ∀ {k} → γ ⊢= k → γ ⊢= k → Maybe (γ ⊢= k)
+a +++ CoContextualPi.Unification.var x = {!   !}
+a +++ CoContextualPi.Unification.con x x₁ = {!   !}
 
 +-un : γ ⊢= k → Set
 +-un t = t ≔ t + t

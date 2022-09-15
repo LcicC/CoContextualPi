@@ -32,6 +32,8 @@ data Cons : Kind → List Kind → Set where
   chan           : Cons type (multiplicity ∷ multiplicity ∷ type ∷ [])
   prod sum       : Cons type (type ∷ type ∷ [])
   zero one omega : Cons multiplicity []
+  ∑ₘ             : Cons multiplicity (multiplicity ∷ multiplicity ∷ [])
+  ∑ₜ              : Cons type (type ∷ type ∷ [])
 
 private
   variable
@@ -54,6 +56,13 @@ decEqCons one omega = no (λ ())
 decEqCons omega zero = no (λ ())
 decEqCons omega one = no (λ ())
 decEqCons omega omega = yes refl
+decEqCons ∑ₘ ∑ₘ = yes refl
+decEqCons ∑ₜ ∑ₜ = yes refl
+decEqCons ∑ₜ prod = no (λ ())
+decEqCons ∑ₜ sum = no (λ ())
+decEqCons prod ∑ₜ = no (λ ())
+decEqCons sum ∑ₜ = no (λ ())
+
 
 SYNTAX : Syntax
 Syntax.Kind SYNTAX = Kind
@@ -81,15 +90,15 @@ pattern _‵+_ t s = Unification.con sum (t ∷ s ∷ [])
 pattern 0∙ = Unification.con zero []
 pattern 1∙ = Unification.con one []
 pattern ω∙ = Unification.con omega []
+pattern _⊕ₘ_ α β = Unification.con ∑ₘ (α ∷ β ∷ []) 
+pattern _⊕ₜ_ s t = Unification.con ∑ₜ (s ∷ t ∷ [])
 
 private
   variable
     γ δ : KindCtx
     x y iz ix iy oz ox oy : Usage γ
     a b c t tx ty tz lz lx ly rz rx ry : Type γ
-
-
-
+{-
 data _≔_ {γ} : ∀ {k} → γ ⊢= k → γ ⊢= k → Set where
   usage  : {x : Usage γ} → x ≔ x
   top    : ‵⊤ ≔ ‵⊤
@@ -104,7 +113,7 @@ data _≔_+_ {γ} : ∀ {k} → γ ⊢= k → γ ⊢= k → γ ⊢= k → Set wh
   -- NOTE: x ≔ y + z is not necessarily unique
   left   : x  ≔ x  + 0∙
   right  : x  ≔ 0∙ + x
-  shared : ω∙ ≔ x  + y
+  shared : ω∙ ≔ x  + y --0 + 0?
   top    : ‵⊤ ≔ ‵⊤ + ‵⊤
   chan   : iz ≔ ix + iy → oz ≔ ox + oy → tz ≔ tx → tx ≔ ty
          → # iz oz tz ≔ # ix ox tx + # iy oy ty
@@ -112,9 +121,11 @@ data _≔_+_ {γ} : ∀ {k} → γ ⊢= k → γ ⊢= k → γ ⊢= k → Set wh
          → (lz ‵× rz) ≔ (lx ‵× rx) + (ly ‵× ry)
   sum    : lz ≔ lx + ly → rz ≔ rx + ry
          → (lz ‵+ rz) ≔ (lx ‵+ rx) + (ly ‵+ ry)
+-}
 
 +-un : γ ⊢= k → Set
-+-un t = t ≔ t + t
++-un {k = type} t = t ≡ t ⊕ₜ t
++-un {k = multiplicity} t = t ≡ ω∙
 
 Ctx : ℕ → KindCtx → Set
 Ctx n γ = Vec (Type γ) n
@@ -128,7 +139,10 @@ private
 
 data _≐_⊎_ {γ} : Ctx n γ → Ctx n γ → Ctx n γ → Set where
   [] : [] ≐ [] ⊎ []
-  _∷_ : (a ≔ b + c) → A ≐ B ⊎ C → (a ∷ A) ≐ (b ∷ B) ⊎ (c ∷ C)
+  _∷_ : (a ≡ b ⊕ₜ c) → A ≐ B ⊎ C → (a ∷ A) ≐ (b ∷ B) ⊎ (c ∷ C)
+
 
 ⊎-un : Ctx n γ → Set
 ⊎-un Γ = Γ ≐ Γ ⊎ Γ
+
+ 

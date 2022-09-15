@@ -42,7 +42,12 @@ fresh {n = suc n} = var zero ∷ Vec.map ((|> suc) <|_) fresh
 
 postulate
   fresh-lookup-id : ∀{n m}(Γ : Ctx n m) → Vec.lookup Γ <| fresh ≡ Γ
-  fresh-lookup-var : ∀{n}(x : Fin n) → Vec.lookup fresh x ≡ var x
+  
+fresh-lookup-var : ∀{n}(x : Fin n) → Vec.lookup fresh x ≡ var x
+fresh-lookup-var {suc n} zero = refl
+fresh-lookup-var {suc n} (suc x) with fresh-lookup-var x
+fresh-lookup-var {suc .(suc _)} (suc zero) | eq = refl
+fresh-lookup-var {suc .(suc _)} (suc (suc x)) | eq = {!   !}
 
 infixr 2 !_
 pattern !_ t = _ , t

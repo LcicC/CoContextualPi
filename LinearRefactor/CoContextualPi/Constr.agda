@@ -29,7 +29,7 @@ open import CoContextualPi.Types
 open Unification using (|>; _<|_; var; con; zero; suc; !_)
 open import CoContextualPi.TypeSystem
 
-module CoContextualPi.Inference where
+module CoContextualPi.Constr where
 
 private
   variable
@@ -41,6 +41,20 @@ private
     t s r sₗ sᵣ tₗ tᵣ : Type γ
     Γ Δ Θ : Ctx n γ
 
+-- In library?
+<< : γ ∋= k → (γ List.++ δ) ∋= k
+<< (! zero) = !zero
+<< (! suc i) = !suc (<< (! i))
+
+>> : γ ∋= k → (δ List.++ γ) ∋= k
+>> {δ = []} i = i
+>> {δ = _ ∷ _} i = !suc (>> i)
+------------------
+
+fresh : Σ[ γ ∈ KindCtx ] Ctx n γ
+fresh {zero} = [] , []
+fresh {suc n} = Product.map (type ∷_) (λ Γ → (var !zero) ∷ (|> !suc <|ᵛ Γ)) fresh
+
 private
   -- Help ourselves to some goodies
   open RawFunctor {{...}}
@@ -49,7 +63,6 @@ private
   instance maybeFunctor = maybeCat.functor
   instance maybeMonad = maybeCat.monad
   instance maybeApplicative = maybeCat.applicative
-
 
 data Constr (γ : KindCtx) : Set where
   [_==_] : γ ⊢= k₁ → γ ⊢= k₂ → Constr γ
@@ -119,18 +132,6 @@ syntax ConstrSubst {γ} {δ} (λ σ → P) = ∀⟦ σ ∶ γ ↦ δ ⟧ P
   |>> subst (λ ● → _ ⊢ _ ∶ ●) (sym (Unificationₚ.<|-assoc σ₁ σ₂ t))
   |>> subst (λ ● → ● ⊢ _ ∶ _) (<|ᵛ-assoc _ _ _)
 
-<< : γ ∋= k → (γ List.++ δ) ∋= k
-<< (! zero) = !zero
-<< (! suc i) = !suc (<< (! i))
-
->> : γ ∋= k → (δ List.++ γ) ∋= k
->> {δ = []} i = i
->> {δ = _ ∷ _} i = !suc (>> i)
-
-fresh : Σ[ γ ∈ KindCtx ] Ctx n γ
-fresh {zero} = [] , []
-fresh {suc n} = Product.map (type ∷_) (λ Γ → (var !zero) ∷ (|> !suc <|ᵛ Γ)) fresh
-
 un-constr¹ : (t : γ ⊢= k) → ∀⟦ σ ∶ γ ↦ δ ⟧¹ (+-un (σ <| t))
 un-constr¹ t = [ t == t + t ] , λ {_ +⟦ x ⟧ → x}
 
@@ -164,7 +165,6 @@ map-==-+ {γ = γ} (x ∷ Γ) (y ∷ Δ) (z ∷ Θ) = [ (|> << <| x) == (|> ((>>
 <|ᶜ¹-≗ : {f g : ∀ {k} → γ ∋= k → δ ⊢= k} → Unificationₚ._≗_ {P = γ ∋=_} f g → Unificationₚ._≗_ {A = ⊤} {P = λ _ → Constr γ} (f <|ᶜ¹_) (g <|ᶜ¹_)
 <|ᶜ¹-≗ eq [ x == y ] rewrite Unificationₚ.<|-≗ eq x | Unificationₚ.<|-≗ eq y = refl
 <|ᶜ¹-≗ eq [ x == y + z ] rewrite Unificationₚ.<|-≗ eq x | Unificationₚ.<|-≗ eq y | Unificationₚ.<|-≗ eq z = refl
-
 
 module _ where
   private
@@ -246,7 +246,7 @@ module _ where
     var-==-+ : {x : γ ∋= k₁} {s t : γ ⊢= k₂} → Normalised [ var x == s + t ]
     ==-var-+ : {x : γ ∋= k₁} {s t : γ ⊢= k₂} → Normalised [ s == var x + t ]
     ==-+-var : {x : γ ∋= k₁} {s t : γ ⊢= k₂} → Normalised [ s == t + var x ]
-
+{-
   normalise : (as : List (Constr γ)) → ∃[ bs ] as ⇔ bs × (All Normalised bs ⊎ Unsat {I = FreeSubst _ δ} (λ σ c → ⟦ σ <|ᶜ c ⟧) bs)
   normalise [] = [] , ⇔-refl , inj₁ []
   normalise ([ var x == y ] ∷ as)
@@ -263,97 +263,20 @@ module _ where
   normalise ([ sx ‵+ tx == sy ‵+ ty ] ∷ as) = {!!}
   normalise ([ x == y ] ∷ as) = {!!}
   normalise ([ x == x₁ + x₂ ] ∷ as) = {!!}
+  -}
 
   data Value : Constr γ → Set where
     type-var : {x y z : γ ∋= type} → Value [ var x == var y + var z ]
     usage-var-==-+ : {x : γ ∋= multiplicity} {s t : γ ⊢= multiplicity} → Value [ var x == s + t ]
     usage-==-var-+ : {x : γ ∋= multiplicity} {s t : γ ⊢= multiplicity} → Value [ s == var x + t ]
     usage-==-+-var : {x : γ ∋= multiplicity} {s t : γ ⊢= multiplicity} → Value [ s == t + var x ]
-
-  solve : (as : List (Constr γ)) → All Normalised as → Dec (Σ[ δ ∈ KindCtx ] Σ[ sol ∈ Subst _ δ ] (∀ {ξ} (σ : FreeSubst _ ξ) → ⟦ (σ <> sub sol) <|ᶜ as ⟧))
+{-
+  solve : (as : List (Constr γ)) → All Normalised as → 
+    Dec (Σ[ δ ∈ KindCtx ] Σ[ sol ∈ Subst _ δ ] (∀ {ξ} (σ : FreeSubst _ ξ) → ⟦ (σ <> sub sol) <|ᶜ as ⟧))
   solve .[] [] = yes (_ , [] , λ σ → [] )
   solve .([ var _ == _ ] ∷ _) (var-== ∷ nas) = {!!}
   solve .([ _ == var _ ] ∷ _) (==-var ∷ nas) = {!!}
   solve .([ var _ == _ + _ ] ∷ _) (var-==-+ ∷ nas) = {!!}
   solve .([ _ == var _ + _ ] ∷ _) (==-var-+ ∷ nas) = {!!}
   solve .([ _ == _ + var _ ] ∷ _) (==-+-var ∷ nas) = {!!}
-
-constrExpr : (e : Expr n) → Σ[ γ ∈ KindCtx ] Σ[ Γ ∈ Ctx n γ ] Σ[ t ∈ Type γ ] ∀⟦ σ ∶ γ ↦ δ ⟧ ((σ <|ᵛ Γ) ⊢ e ∶ (σ <| t))
-constrExpr {n = n} top =
-  let γ , Γ = fresh in
-  let cs , f = un-constr Γ in
-  _ , Γ , ‵⊤ , cs , λ where σ xs → top (f σ xs)
-constrExpr {n = suc _} (var i) =
-  let γ , Γ = fresh in
-  let cs , ps = un-var i Γ in
-  _ , Γ , Vec.lookup Γ i , cs , λ σ var-Γ → var (ps σ var-Γ)
-constrExpr (fst e) =
-  let γ , Γ , t , cs , eP = constrExpr e in
-  let +-un-s , sP = un-constr¹ (var (! (suc zero))) in
-  let +2 = λ {k} → |> {k = k} (!suc ∘ !suc) in
-  type ∷ type ∷ γ
-  , +2 <|ᵛ Γ
-  , var (! zero)
-  , [ +2 <| t == var (! zero) ‵× var (! suc zero) ] ∷ +-un-s ∷ (+2 <|ᶜ cs)
-  , λ { σ (≡⟦ t≡0×1 ⟧ ∷ ⟦+-un-s⟧ ∷ xs) →
-    fst (sP σ ⟦+-un-s⟧) ((eP (σ <> +2) (subst ⟦_⟧ (<|ᶜ-assoc _ _ _) xs))
-                        |>> ⊢-∶-assoc σ +2 t
-                        |>> subst (λ ● → (σ <|ᵛ (+2 <|ᵛ Γ)) ⊢ e ∶ ●) {!t≡0×1!})}
-constrExpr (snd e) =
-  let γ , Γ , t , cs , eP = constrExpr e in
-  let +-un-s , sP = un-constr¹ (var (! (suc zero))) in
-  let +2 = λ {k} → |> {k = k} (!suc ∘ !suc) in
-  type ∷ type ∷ γ
-  , +2 <|ᵛ Γ
-  , var (! zero)
-  , [ +2 <| t == var (! (suc zero)) ‵× var (! zero) ] ∷ +-un-s ∷ (+2 <|ᶜ cs)
-  , λ { σ (≡⟦ t≡0×1 ⟧ ∷ ⟦+-un-s⟧ ∷ xs) →
-    snd (sP σ ⟦+-un-s⟧) ((eP (σ <> +2) (subst ⟦_⟧ (<|ᶜ-assoc _ _ _) xs))
-                        |>> ⊢-∶-assoc σ +2 t
-                        |>> subst (λ ● → (σ <|ᵛ (+2 <|ᵛ Γ)) ⊢ e ∶ ●) {!t≡0×1!})}
-constrExpr (inl e) =
-  let γ , Γ , t , cs , eP = constrExpr e in
-  type ∷ γ
-  , |> !suc <|ᵛ Γ
-  , ((|> !suc <| t) ‵+ var !zero)
-  , (|> !suc <|ᶜ cs)
-  , λ σ xs → inl (eP (σ <> |> !suc) (subst ⟦_⟧ (<|ᶜ-assoc _ _ _) xs)
-                 |>> ⊢-∶-assoc σ (|> !suc) t)
-constrExpr (inr e) =
-  let γ , Γ , t , cs , eP = constrExpr e in
-  type ∷ γ
-  , |> !suc <|ᵛ Γ
-  , (var !zero ‵+ (|> !suc <| t))
-  , (|> !suc <|ᶜ cs)
-  , λ σ xs → inr (eP (σ <> |> !suc) (subst ⟦_⟧ (<|ᶜ-assoc _ _ _) xs)
-                 |>> ⊢-∶-assoc σ (|> !suc) t)
-constrExpr {δ = δ} (l ‵, r) =
-  let lγ , lΓ , lt , lcs , lps = constrExpr {δ = δ} l in
-  let rγ , rΓ , rt , rcs , rps = constrExpr {δ = δ} r in
-  let mγ , mΓ = fresh in
-  let congr = map-==-+ mΓ lΓ rΓ in
-  let left = (|> (>> {δ = mγ}) ∘ <<) <|ᶜ lcs in
-  let right = (|> (>> {δ = mγ}) ∘ >>) <|ᶜ rcs in
-  mγ List.++ lγ List.++ rγ
-  , |> << <|ᵛ mΓ
-  , |> (>> {δ = mγ}) <| ((|> << <| lt) ‵× (|> >> <| rt))
-  , congr List.++ (left List.++ right)
-  , λ {σ xs →
-    let b = subst ⟦_⟧ (Listₚ.map-++-commute (σ <|ᶜ¹_) congr {!!}) xs in
-    pair (⟦map-==-+⟧ mΓ lΓ rΓ σ (Allₚ.map⁺ (Allₚ.++⁻ˡ congr (Allₚ.map⁻ xs))))
-        (lps (σ <> |> (>> {δ = mγ} ∘ <<)) {!!} |>> {!!})
-        {! !}}
-
-
-constrProc : (p : Proc n) → Σ[ γ ∈ KindCtx ] Σ[ Γ ∈ Ctx n γ ] ∀⟦ σ ∶ γ ↦ δ ⟧ ((σ <|ᵛ Γ) ⊢ p)
-constrProc end =
-  let γ , Γ = fresh in
-  let cs , f = un-constr Γ in
-  _ , Γ , cs , λ σ x → end (f σ x)
-constrProc (new p)
-  with γ , (t ∷ Γ) , cs , f ← constrProc p
-  = γ , Γ , cs , λ σ x → new (σ <| t) (f σ x)
-constrProc (comp p p₁) = {!!}
-constrProc (recv x p) = {!!}
-constrProc (send x x₁ p) = {!!}
-constrProc (case x p p₁) = {!!}
+  -}
