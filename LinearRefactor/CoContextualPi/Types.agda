@@ -33,7 +33,7 @@ data Cons : Kind → List Kind → Set where
   prod sum       : Cons type (type ∷ type ∷ [])
   zero one omega : Cons multiplicity []
   ∑ₘ             : Cons multiplicity (multiplicity ∷ multiplicity ∷ [])
-  ∑ₜ              : Cons type (type ∷ type ∷ [])
+  --∑ₜ              : Cons type (type ∷ type ∷ [])
 
 private
   variable
@@ -57,11 +57,11 @@ decEqCons omega zero = no (λ ())
 decEqCons omega one = no (λ ())
 decEqCons omega omega = yes refl
 decEqCons ∑ₘ ∑ₘ = yes refl
-decEqCons ∑ₜ ∑ₜ = yes refl
-decEqCons ∑ₜ prod = no (λ ())
-decEqCons ∑ₜ sum = no (λ ())
-decEqCons prod ∑ₜ = no (λ ())
-decEqCons sum ∑ₜ = no (λ ())
+--decEqCons ∑ₜ ∑ₜ = yes refl
+--decEqCons ∑ₜ prod = no (λ ())
+--decEqCons ∑ₜ sum = no (λ ())
+--decEqCons prod ∑ₜ = no (λ ())
+--decEqCons sum ∑ₜ = no (λ ())
 
 
 SYNTAX : Syntax
@@ -91,7 +91,7 @@ pattern 0∙ = Unification.con zero []
 pattern 1∙ = Unification.con one []
 pattern ω∙ = Unification.con omega []
 pattern _⊕ₘ_ α β = Unification.con ∑ₘ (α ∷ β ∷ []) 
-pattern _⊕ₜ_ s t = Unification.con ∑ₜ (s ∷ t ∷ [])
+--pattern _⊕ₜ_ s t = Unification.con ∑ₜ (s ∷ t ∷ [])
 
 private
   variable
@@ -123,9 +123,8 @@ data _≔_+_ {γ} : ∀ {k} → γ ⊢= k → γ ⊢= k → γ ⊢= k → Set wh
          → (lz ‵+ rz) ≔ (lx ‵+ rx) + (ly ‵+ ry)
 -}
 
-+-un : γ ⊢= k → Set
-+-un {k = type} t = t ≡ t ⊕ₜ t
-+-un {k = multiplicity} t = t ≡ t ⊕ₘ t
++-un : γ ⊢= multiplicity → Set
++-un t = t ≡ t ⊕ₘ t
 
 Ctx : ℕ → KindCtx → Set
 Ctx n γ = Vec (Type γ) n
@@ -139,7 +138,7 @@ private
 
 data _≐_⊎_ {γ} : Ctx n γ → Ctx n γ → Ctx n γ → Set where
   [] : [] ≐ [] ⊎ []
-  _∷_ : (a ≡ b ⊕ₜ c) → A ≐ B ⊎ C → (a ∷ A) ≐ (b ∷ B) ⊎ (c ∷ C)
+  _∷_ : {!   !} → A ≐ B ⊎ C → (a ∷ A) ≐ (b ∷ B) ⊎ (c ∷ C)
 
 
 ⊎-un : Ctx n γ → Set
