@@ -125,7 +125,7 @@ data _≔_+_ {γ} : ∀ {k} → γ ⊢= k → γ ⊢= k → γ ⊢= k → Set wh
 
 +-un : γ ⊢= k → Set
 +-un {k = type} t = t ≡ t ⊕ₜ t
-+-un {k = multiplicity} t = t ≡ ω∙
++-un {k = multiplicity} t = t ≡ t ⊕ₘ t
 
 Ctx : ℕ → KindCtx → Set
 Ctx n γ = Vec (Type γ) n
