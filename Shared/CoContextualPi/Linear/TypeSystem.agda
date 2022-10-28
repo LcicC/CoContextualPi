@@ -4,9 +4,16 @@ open import Data.Product as Product using (Σ; _×_; ∃-syntax; Σ-syntax; _,_;
 open import Data.Nat as ℕ using (ℕ; zero; suc)
 open import Data.Fin as Fin using (Fin; zero; suc)
 open import Data.Vec as Vec using (Vec; []; _∷_)
+open import Data.Vec.Relation.Binary.Pointwise.Inductive as PW using (Pointwise; []; _∷_)
 open import Data.Bool
+open import Data.Maybe using (Maybe; just; nothing)
+open import Category.Functor
+open import Category.Monad
+open import Category.Applicative
+import Data.Maybe.Categorical as maybeCat
 
 open import CoContextualPi.Linear.Types
+open import CoContextualPi.Linear.Multiplicities
 
 module CoContextualPi.Linear.TypeSystem where
 
@@ -37,6 +44,9 @@ Ctx n m = Vec (Type m) n
 UseCtx : ℕ → Set
 UseCtx n = Vec Bool n
 
+infixr 2 !_
+pattern !_ t = _ , t
+
 private
   variable
     Γ : Ctx n l
@@ -46,6 +56,29 @@ private
     t s : Type l
     x y : Fin n
 
+private
+  -- Help ourselves to some goodies
+  open RawFunctor {{...}}
+  open RawApplicative {{...}} hiding (_<$>_)
+  open RawMonad {{...}} hiding (_<$>_; _⊛_)
+  instance maybeFunctor = maybeCat.functor
+  instance maybeMonad = maybeCat.monad
+  instance maybeApplicative = maybeCat.applicative
+
+fresh : Ctx n n
+fresh {n = zero} = []
+fresh {n = suc n} = var zero ∷ Vec.map ((|> suc) <|_) fresh
+
+{- Properties of fresh -}
+
+postulate
+  fresh-lookup-id : ∀{n m}(Γ : Ctx n m) → Vec.lookup Γ <| fresh ≡ Γ
+  
+fresh-lookup-var : ∀{n}(x : Fin n) → Vec.lookup fresh x ≡ var x
+fresh-lookup-var {suc n} zero = refl
+fresh-lookup-var {suc n} (suc x) with fresh-lookup-var x
+fresh-lookup-var {suc .(suc _)} (suc zero) | eq = refl
+fresh-lookup-var {suc .(suc _)} (suc (suc x)) | eq = {!   !}
 
 data _≐_•_ : UseCtx n → UseCtx n → UseCtx n → Set where
   empty : [] ≐ [] • []
@@ -125,3 +158,54 @@ allUsed Γ = Vec.map use Γ
 
 _⊢_ : Ctx n m → Proc n → Set
 Γ ⊢ P = Γ ؛ allUsed Γ ⊢ P
+
+{-
+-- Il vettore di usi deve essere <= di quello di tipo
+inferE : (e : Expr n) → Maybe (Σ[ m ∈ ℕ ] Type m × Ctx n m × ExtUseCtx n)
+inferE top      = return (! ‵⊤ , fresh , VecOf ω)
+inferE (var x)  = return (! Vec.lookup fresh x , fresh , (place once at x else unused))
+inferE (fst e)  = do ! t , Γ₁ , Δ₁ ← inferE e
+                     let shape = var zero ‵× var (suc (zero {zero}))
+                     ! σ ← unify <[ t ] [ shape ]>
+                     return (! [ var zero ]|> σ , σ <|[ Γ₁ ] , Δ₁)
+inferE (snd e)  = do ! t , Γ₁ , Δ₂ ← inferE e
+                     let shape = var zero ‵× var (suc (zero {zero}))
+                     ! σ ← unify <[ t ] [ shape ]>
+                     return (! [ var (suc zero) ]|> σ , σ <|[ Γ₁ ] , Δ₂)
+inferE (inl e)  = do ! t , Γ₁ , Δ₁ ← inferE e
+                     return (! <[ t ] ‵+ [ var (zero {zero}) ]> , <[ Γ₁ ] , Δ₁)
+inferE (inr e)  = do ! t , Γ₁ , Δ₂ ← inferE e
+                     return (! <[ var (zero {zero}) ] ‵+ [_]> {m = 1} t , [ Γ₁ ]> , Δ₂)
+inferE (e ‵, f) = do ! t , Γ₁ , Δ₁ ← inferE e
+                     ! s , Γ₂ , Δ₂ ← inferE f
+                     ! σ ← unify <[ Γ₁ ] [ Γ₂ ]>
+                     -- return pointwise sum of usages
+                     return (! (σ <|[ t ]) ‵× ([ s ]|> σ) , σ <|[ Γ₁ ] , Vec.zipWith _+ₘ_ Δ₁ Δ₂)
+              -}
+
+ω≤fresh : VecOf {n} ω ≤ₘₗ Vec.map upper-bound fresh
+ω≤fresh {n = zero} = []
+ω≤fresh {n = suc n} = 
+  let rec = ω≤fresh {n = n} in
+  reflex ∷ {!   !}
+
+inferE : (e : Expr n) → Maybe (Σ[ m ∈ ℕ ] Type m × (Σ[ (Γ , Δ) ∈ Ctx n m × ExtUseCtx n ]  Δ ≤ₘₗ Vec.map upper-bound Γ))
+inferE top      = return (! ‵⊤ , ((fresh , VecOf ω) , ω≤fresh))
+inferE (var x)  = return (! Vec.lookup fresh x , ((fresh , (place once at x else unused)) , {!   !}))
+inferE (fst e)  = do ! t , ((Γ₁ , Δ₁) , _) ← inferE e
+                     let shape = var zero ‵× var (suc (zero {zero}))
+                     ! σ ← unify <[ t ] [ shape ]>
+                     return (! [ var zero ]|> σ , ((σ <|[ Γ₁ ] , Δ₁) , {!   !}))
+inferE (snd e)  = do ! t , ((Γ₁ , Δ₂) , _) ← inferE e
+                     let shape = var zero ‵× var (suc (zero {zero}))
+                     ! σ ← unify <[ t ] [ shape ]>
+                     return (! [ var (suc zero) ]|> σ , ((σ <|[ Γ₁ ] , Δ₂) , {!   !}))
+inferE (inl e)  = do ! t , ((Γ₁ , Δ₁) , _) ← inferE e
+                     return (! <[ t ] ‵+ [ var (zero {zero}) ]> , ((<[ Γ₁ ] , Δ₁) , {!   !}))
+inferE (inr e)  = do ! t , ((Γ₁ , Δ₂) , _) ← inferE e
+                     return (! <[ var (zero {zero}) ] ‵+ [_]> {m = 1} t , (([ Γ₁ ]> , Δ₂) , {!   !}))
+inferE (e ‵, f) = do ! t , ((Γ₁ , Δ₁) , _) ← inferE e
+                     ! s , ((Γ₂ , Δ₂) , _) ← inferE f
+                     ! σ ← unify <[ Γ₁ ] [ Γ₂ ]>
+                     -- return pointwise sum of usages
+                     return (! (σ <|[ t ]) ‵× ([ s ]|> σ) , ((σ <|[ Γ₁ ] , Vec.zipWith _+ₘ_ Δ₁ Δ₂) , {!   !}))
